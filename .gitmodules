@@ -10,7 +10,7 @@
 [submodule "extern/spdlog"]
 	path = extern/spdlog
 	url = https://github.com/MichaelRizkalla/spdlog.git
-	branch = v1.8.2
+	branch = v1.8.2r
 [submodule "extern/stb"]
 	path = extern/stb
 	url = https://github.com/MichaelRizkalla/stb.git
