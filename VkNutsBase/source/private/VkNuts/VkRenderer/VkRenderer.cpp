@@ -5,41 +5,55 @@
 #include <VkNuts/VkRenderer/VkRenderer.h>
 
 namespace nuts {
-    ShaderRegistry     VkRenderer::mShaderRegistry;
-    ImageRegistry      VkRenderer::mImageRegistry;
-    vk::PhysicalDevice VkRenderer::mPhysicalDevice;
 
-    void VkRenderer::Init(vk::Device device) noexcept {
+    vk::Instance          VkRenderer::mInstance { nullptr };
+    vk::PhysicalDevice    VkRenderer::mPhysicalDevice { nullptr };
+    vk::Device            VkRenderer::mDevice { nullptr };
+    ShaderRegistry        VkRenderer::mShaderRegistry {};
+    ImageRegistry         VkRenderer::mImageRegistry {};
+    VulkanMemoryAllocator VkRenderer::mAllocator {};
+    VkSamplerManager      VkRenderer::mSamplerManager {};
+
+    void VkRenderer::init(vk::Instance instance, vk::Device device, vk::PhysicalDevice physicalDevice) noexcept {
+        mInstance       = instance;
+        mPhysicalDevice = physicalDevice;
+        mDevice         = device;
+
         ShaderRegistryInitializer shaderRegistryInit {};
-        shaderRegistryInit.mDevice = device;
-        mShaderRegistry.Init(&shaderRegistryInit);
+        shaderRegistryInit.mDevice = mDevice;
+        mShaderRegistry.init(&shaderRegistryInit);
 
         ImageRegistryInitializer imageRegistryInit {};
-        imageRegistryInit.mDevice = device;
-        mImageRegistry.Init(&imageRegistryInit);
+        imageRegistryInit.mDevice = mDevice;
+        mImageRegistry.init(&imageRegistryInit);
+
+        mAllocator.init(mInstance, mDevice, mPhysicalDevice);
 
         NUTS_ENGINE_INFO("VkRenderer is initialized!");
     }
-    void VkRenderer::Finalize() noexcept {
-        mShaderRegistry.DetachAllAttachments();
-        mImageRegistry.DetachAllAttachments();
+    void VkRenderer::finalize() noexcept {
+        mShaderRegistry.detachAllAttachments();
+        mImageRegistry.detachAllAttachments();
+
+        mSamplerManager.finalize();
+        mAllocator.finalize();
     }
 
-    bool             VkRenderer::LoadShader(const char* shaderPath, const char* alias) noexcept { return mShaderRegistry.AttachAttachment(alias, shaderPath); }
-    bool             VkRenderer::CreateShader(const char* alias) noexcept { return mShaderRegistry.CreateVkShader(alias); }
-    bool             VkRenderer::DestroyShader(const char* alias) noexcept { return mShaderRegistry.DestroyVkShader(alias); }
-    vk::ShaderModule VkRenderer::GetShader(const char* alias) { return mShaderRegistry.QueryAttachment(alias).mVkShaderModule; }
+    bool             VkRenderer::loadShader(const char* shaderPath, const char* alias) noexcept { return mShaderRegistry.attachAttachment(alias, shaderPath); }
+    bool             VkRenderer::createShader(const char* alias) noexcept { return mShaderRegistry.createVkShader(alias); }
+    bool             VkRenderer::destroyShader(const char* alias) noexcept { return mShaderRegistry.destroyVkShader(alias); }
+    vk::ShaderModule VkRenderer::getShader(const char* alias) { return mShaderRegistry.queryAttachment(alias).mVkShaderModule; }
 
-    bool VkRenderer::Load_Image(const char* imagePath, const char* alias, ImageLoadFormat fmt) noexcept { return mImageRegistry.AttachAttachment(alias, imagePath, fmt); }
-    bool VkRenderer::CreateImage(const char* alias, uint32_t queueIndexFamily, const vk::ImageCreateInfo* imageCreateInfo,
-                                 const vk::ImageViewCreateInfo* imageViewCreateInfo) noexcept {
-        return mImageRegistry.CreateVkImage(alias, queueIndexFamily, imageCreateInfo, imageViewCreateInfo);
+    bool VkRenderer::loadImage(const char* imagePath, const char* alias, ImageLoadFormat fmt) noexcept { return mImageRegistry.attachAttachment(alias, imagePath, fmt); }
+    bool VkRenderer::createImage(const char* alias, const vk::ImageCreateInfo* imageCreateInfo, const vk::ImageViewCreateInfo* imageViewCreateInfo,
+                                 const vk::MemoryPropertyFlags memoryPropertyFlags) noexcept {
+        return mImageRegistry.createVkImage(alias, imageCreateInfo, imageViewCreateInfo, memoryPropertyFlags);
     }
-    bool          VkRenderer::DestroyImage(const char* alias) noexcept { return mImageRegistry.DestroyVkImage(alias); }
-    vk::Image     VkRenderer::GetVkImage(const char* alias) { return mImageRegistry.QueryAttachment(alias).mVkImage; }
-    vk::ImageView VkRenderer::GetVkImageView(const char* alias) { return mImageRegistry.QueryAttachment(alias).mVkImageView; }
+    bool          VkRenderer::destroyImage(const char* alias) noexcept { return mImageRegistry.destroyVkImage(alias); }
+    vk::Image     VkRenderer::getVkImage(const char* alias) { return mImageRegistry.queryAttachment(alias).mTexture.image; }
+    vk::ImageView VkRenderer::getVkImageView(const char* alias) { return mImageRegistry.queryAttachment(alias).mTexture.imageView; }
 
-    uint32_t VkRenderer::GetMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
+    uint32_t VkRenderer::getMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
         vk::PhysicalDeviceMemoryProperties memProperties;
         mPhysicalDevice.getMemoryProperties(&memProperties);
 

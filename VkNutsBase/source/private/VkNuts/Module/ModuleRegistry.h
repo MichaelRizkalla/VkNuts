@@ -4,15 +4,15 @@
 #include <NutsPCH.h>
 // clang-format on
 
-#include <Utilities/SingeltonCRTP.hpp>
+#include <Utilities/SingletonCRTP.hpp>
 #include <VkNuts/Core/Registry/Registry.h>
 #include <VkNuts/Module/Module.h>
 
 namespace nuts {
-    class ModuleRegistry : Singelton< ModuleRegistry > {
+    class ModuleRegistry : Singleton< ModuleRegistry > {
       protected:
-        ModuleRegistry()  = default;
-        ~ModuleRegistry() = default;
+        ModuleRegistry();
+        ~ModuleRegistry();
 
       private:
         std::unordered_map< std::string, Module > mModules;

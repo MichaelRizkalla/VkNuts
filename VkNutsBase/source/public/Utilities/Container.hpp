@@ -16,8 +16,8 @@ namespace nuts {
       public:
         using value_type          = ContainedType;
         using size_type           = std::size_t;
-        using iterator_type       = ContainedType*;
         using reference_type      = ContainedType&;
+        using iterator_type       = ContainedType*;
         using const_iterator_type = const ContainedType*;
         using allocator_type      = std::allocator_traits< Allocator >::template rebind_alloc< ContainedType >;
 
@@ -33,7 +33,7 @@ namespace nuts {
             Allocate(Size);
             std::memcpy(Data, rhs.Data, sizeInBytes());
         }
-        constexpr Container(Container&& rhs) : Al(std::move(rhs.Al)), Size(rhs.Size) {
+        constexpr Container(Container&& rhs) noexcept : Al(std::move(rhs.Al)), Size(rhs.Size) {
             Data     = std::exchange(rhs.Data, nullptr);
             rhs.Size = 0;
         }
@@ -50,21 +50,21 @@ namespace nuts {
             }
             return *this;
         }
-        constexpr Container& operator=(Container&& rhs) {
+        constexpr Container& operator=(Container&& rhs) noexcept(false) {
             if (this != std::addressof(rhs)) {
                 Deallocate();
                 if constexpr (std::allocator_traits< allocator_type >::is_always_equal::value) {
-                    Al       = std::move(rhs.Al);
-                    Data     = std::exchange(rhs.Data, nullptr);
-                    rhs.Size = 0;
+                    Al   = std::move(rhs.Al);
+                    Data = std::exchange(rhs.Data, nullptr);
+                    Size = std::exchange(rhs.Size, 0);
                 } else if constexpr (std::allocator_traits< allocator_type >::propagate_on_container_move_assignment::value) {
-                    Al       = std::move(rhs.Al);
-                    Data     = std::exchange(rhs.Data, nullptr);
-                    rhs.Size = 0;
+                    Al   = std::move(rhs.Al);
+                    Data = std::exchange(rhs.Data, nullptr);
+                    Size = std::exchange(rhs.Size, 0);
                 } else {
                     if (Al == rhs.Al) {
-                        Data     = std::exchange(rhs.Data, nullptr);
-                        rhs.Size = 0;
+                        Data = std::exchange(rhs.Data, nullptr);
+                        Size = std::exchange(rhs.Size, 0);
                     } else {
                         Allocate(Size);
                         std::memcpy(Data, rhs.Data, sizeInBytes());

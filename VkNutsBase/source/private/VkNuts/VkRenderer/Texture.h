@@ -5,21 +5,21 @@
 // clang-format on
 
 #include <Platform/Generic/FileOperations.h>
-#include <Platform/Vulkan/VulkanHelper.h>
 #include <Utilities/Container.hpp>
 #include <VkNuts/Core/Attachment/Attachment.h>
 #include <VkNuts/Core/Registry/Registry.h>
+#include <Platform/Vulkan/VkManagement/VulkanMemoryAllocator.h>
 
 namespace nuts {
-    struct AttachmentImageAPI : public AttachmentAPI {
-        AttachmentImageAPI();
-        virtual ~AttachmentImageAPI();
-        void OnLoad() noexcept override;
-        void OnUnload() noexcept override;
-        bool CreateVkImage(const vk::Device& device, uint32_t queueIndexFamily, const vk::ImageCreateInfo* imageCreateInfo,
-                           const vk::ImageViewCreateInfo* imageViewCreateInfo) noexcept;
-        void DestroyVkImage() noexcept;
-        bool ChangeImageLayout(const vk::CommandBuffer& commandBuffer, vk::ImageLayout newImageLayout) noexcept;
+    struct AttachmentTextureAPI : public AttachmentAPI {
+        AttachmentTextureAPI();
+        virtual ~AttachmentTextureAPI();
+        void onLoad() noexcept override;
+        void onUnload() noexcept override;
+        bool createVkImage(VulkanMemoryAllocator* alloc, const vk::ImageCreateInfo* imageCreateInfo, const vk::ImageViewCreateInfo* imageViewCreateInfo,
+                           const vk::MemoryPropertyFlags memoryPropertyFlags) noexcept;
+        void destroyVkImage() noexcept;
+        bool changeImageLayout(const vk::CommandBuffer& commandBuffer, vk::ImageLayout newImageLayout) noexcept;
         // bool ChangeImageQueueFamilyIndex(const vk::CommandBuffer& commandBuffer, uint32_t newQueueFamilyIndex) noexcept;
 
       protected:
@@ -30,11 +30,10 @@ namespace nuts {
         int                     mImageChannels;
         vk::Device              mDevice;
         uint32_t                mQueueIndexOwner;
-        vk::Image               mVkImage;
-        vk::ImageView           mVkImageView;
         vk::ImageCreateInfo     mImageCreateInfo;
         vk::ImageViewCreateInfo mImageViewCreateInfo;
-        vk::ImageLayout         mCurrentImageLayout;
+        Texture                 mTexture;
+        VulkanMemoryAllocator*  mAllocator;
     };
 
     struct ImageAttachmentData {
@@ -43,22 +42,21 @@ namespace nuts {
         int                     mImageHeight;
         int                     mImageChannels;
         std::size_t             pImageDataSizeInBytes;
-        vk::Image               mVkImage;
-        vk::ImageView           mVkImageView;
         vk::ImageCreateInfo     mImageCreateInfo;
         vk::ImageViewCreateInfo mImageViewCreateInfo;
-        vk::ImageLayout         mCurrentImageLayout;
+        Texture                 mTexture;
     };
 
-    struct ImageAttachment final : public Attachment< ImageAttachmentData, AttachmentImageAPI > {
+    struct ImageAttachment final : public Attachment< ImageAttachmentData, AttachmentTextureAPI > {
         ImageAttachment(const char* name, ImageLoadFormat fmt);
         ~ImageAttachment();
 
-        attachment_data GetAttachmentData() const override;
+        attachment_data getAttachmentData() const override;
     };
 
     struct ImageRegistryInitializer : RegistryInitializer {
-        vk::Device mDevice;
+        vk::Device             mDevice;
+        VulkanMemoryAllocator* mAllocator;
     };
 
     class ImageRegistry final : public Registry< ImageAttachment > {
@@ -66,15 +64,16 @@ namespace nuts {
         ImageRegistry();
         ~ImageRegistry();
 
-        void Init(RegistryInitializer* init) noexcept override;
-        bool CreateVkImage(const char* alias, uint32_t queueIndexFamily, const vk::ImageCreateInfo* imageCreateInfo,
-                           const vk::ImageViewCreateInfo* imageViewCreateInfo) noexcept;
-        bool DestroyVkImage(const char* alias) noexcept;
+        void init(RegistryInitializer* init) noexcept override;
+        bool createVkImage(const char* alias, const vk::ImageCreateInfo* imageCreateInfo, const vk::ImageViewCreateInfo* imageViewCreateInfo,
+                           const vk::MemoryPropertyFlags memoryPropertyFlags) noexcept;
+        bool destroyVkImage(const char* alias) noexcept;
 
-        attachment_type::attachment_data QueryAttachment(const char* alias) const override;
+        attachment_data_type queryAttachment(const char* alias) const override;
 
       private:
-        vk::Device mDevice;
+        vk::Device             mDevice;
+        VulkanMemoryAllocator* mAllocator;
     };
 
 } // namespace nuts

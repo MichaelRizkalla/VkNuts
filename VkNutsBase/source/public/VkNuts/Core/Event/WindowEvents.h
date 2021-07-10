@@ -29,8 +29,8 @@ namespace nuts {
         WindowResizedEvent(int inWidth, int inHeight) : mWidth { inWidth }, mHeight { inHeight } {}
         ~WindowResizedEvent() = default;
 
-        int GetWidth() const { return mWidth; }
-        int GetHeight() const { return mHeight; }
+        int getWidth() const { return mWidth; }
+        int getHeight() const { return mHeight; }
 
         EVENT_INTERFACE(WindowResized, EventCategory::Window, WindowResizedEvent, "WindowResizedEvent: new width: " << mWidth << ", new height: " << mHeight << '\n')
 

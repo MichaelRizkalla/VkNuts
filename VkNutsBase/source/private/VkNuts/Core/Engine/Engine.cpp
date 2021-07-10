@@ -2,62 +2,82 @@
 #include <NutsPCH.h>
 // clang-format on
 
+#include <VkNuts/Core/Log/Log.h>
 #include <Platform/Vulkan/VulkanHelper.h>
 #include <VkNuts/Core/Window/Window.h>
 #include <VkNuts/Core/Event/WindowEvents.h>
-#include <VkNuts/Core/Log/Log.h>
 #include <VkNuts/VkRenderer/VkRenderer.h>
 
 #include <VkNuts/Core/Engine/Engine.h>
+#include <Platform/Vulkan/VkManagement/VulkanMemoryAllocator.h>
 
 namespace nuts {
     int Engine::run() {
-        Log::Init();
-    
-        nuts::InstanceData id {};
+        Log::init();
 
-        id.name       = "test";
-        id.validation = nuts::RuntimeValidation::Enable;
-        id.minVersion = VK_API_VERSION_1_1;
-        id.window     = nullptr;
+        {
+            nuts::InstanceData id {};
 
-        auto window = Window::Create();
+            id.name       = "test";
+            id.validation = nuts::RuntimeValidation::Enable;
+            id.minVersion = VK_API_VERSION_1_1;
+            id.window     = nullptr;
 
-        window->Init({ 512, 512, "No Title", false, nullptr });
+            auto window = Window::create();
 
-        const char* exten[] = { VK_KHR_SURFACE_EXTENSION_NAME };
+            window->init({ 512, 512, "Test Run", false, nullptr });
 
-        auto instance = nuts::VulkanHelper::CreateInstance(id, nuts::array_size::get< uint32_t >(exten), exten);
+            auto second_window = Window::create();
 
-        auto phy_dev = nuts::VulkanHelper::SelectPhysicalDevice(instance, nuts::PhsyicalDeviceSelectionStrategy::SelectLatestAPI);
+            second_window->init({ 480, 320, "Second window", true, nullptr });
 
-        auto sur = nuts::VulkanHelper::CreateSurface(instance, reinterpret_cast< IWindow* >(window.get()));
+            const char* exten[] = { VK_KHR_SURFACE_EXTENSION_NAME };
 
-        nuts::QueuePopulate q;
-        q.flags         = vk::QueueFlagBits::eGraphics;
-        q.priority      = 1.f;
-        q.surface       = sur;
-        q.queueFamilyId = nuts::VulkanHelper::SelectQueueFamilyIndex(phy_dev, sur, vk::QueueFlagBits::eGraphics);
+            auto instance = nuts::VulkanHelper::createInstance(id, nuts::array_size::get< uint32_t >(exten), exten);
 
-        nuts::DeviceData dd;
-        dd.physicalDevice = phy_dev;
-        dd.queues         = { q };
-        dd.validation     = nuts::RuntimeValidation::Enable;
+            auto phy_dev = nuts::VulkanHelper::selectPhysicalDevice(instance, nuts::PhsyicalDeviceSelectionStrategy::SelectLatestAPI);
 
-        auto device = nuts::VulkanHelper::CreateDevice(dd);
+            auto sur = nuts::VulkanHelper::createSurface(instance, reinterpret_cast< IWindow* >(window.get()));
 
-        VkRenderer::Init(device);
-        VkRenderer::mPhysicalDevice = phy_dev;
+            nuts::QueuePopulate q;
+            q.flags         = vk::QueueFlagBits::eGraphics;
+            q.priority      = 1.f;
+            q.surface       = sur;
+            q.queueFamilyId = nuts::VulkanHelper::selectQueueFamilyIndex(phy_dev, sur, vk::QueueFlagBits::eGraphics);
 
-        auto debug = nuts::VulkanHelper::CreateDebugUtilsMessenger(instance);
+            nuts::DeviceData dd;
+            dd.physicalDevice = phy_dev;
+            dd.queues         = { q };
+            dd.validation     = nuts::RuntimeValidation::Enable;
 
-        instance.destroyDebugUtilsMessengerEXT(debug);
-        instance.destroySurfaceKHR(sur);
-        VkRenderer::Finalize();
+            auto device = nuts::VulkanHelper::createDevice(dd);
 
-        device.destroy();
-        instance.destroy();
-        window->Finalize();
+            VmaAllocatorCreateInfo allocatorCI {};
+            allocatorCI.instance       = instance;
+            allocatorCI.device         = device;
+            allocatorCI.physicalDevice = phy_dev;
+
+            VkRenderer::init(instance, device, phy_dev);
+
+            VkRenderer::loadShader("vert.spv", "vertex_pass_through");
+            VkRenderer::loadShader("frag.spv", "fragment_pass_through");
+            if (!VkRenderer::createShader("vertex_pass_through")) { NUTS_ENGINE_ERROR("Failed to create shader: ", "vertex_pass_through"); }
+            if (!VkRenderer::createShader("fragment_pass_through")) { NUTS_ENGINE_ERROR("Failed to create shader: ", "fragment_pass_through"); }
+
+            auto debug = nuts::VulkanHelper::createDebugUtilsMessenger(instance);
+
+            instance.destroyDebugUtilsMessengerEXT(debug);
+            instance.destroySurfaceKHR(sur);
+
+            VkRenderer::finalize();
+
+            device.destroy();
+            instance.destroy();
+            window->finalize();
+            second_window->finalize();
+        }
+
+        Log::finalize();
         return 0;
     }
 

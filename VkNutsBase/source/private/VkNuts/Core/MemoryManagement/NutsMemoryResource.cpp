@@ -13,20 +13,14 @@ namespace nuts {
     NutsMemoryResource::~NutsMemoryResource() = default;
 
     void* NutsMemoryResource::do_allocate(std::size_t bytes, std::size_t alignment) {
-        NUTS_LOG_WIN(auto stdOutHandle = ::GetStdHandle(STD_OUTPUT_HANDLE));
-        NUTS_LOG_WIN(::SetConsoleTextAttribute(stdOutHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY));
-        NUTS_LOG(std::cout << "NutsMemoryResource (Allocation Attempt): Size: " << bytes << ", Alignment: " << alignment << " ...\n");
+        NUTS_ALLOCATION_TRACE_IF_INIT("NutsMemoryResource (Allocation Attempt): Size: {}, Alignment: {} ...", bytes, alignment);
         auto result = mUpStream->allocate(bytes, alignment);
-        NUTS_LOG(std::cout << "NutsMemoryResource (Allocation Successful): Address: " << result << " ...\n");
-        NUTS_LOG_WIN(::SetConsoleTextAttribute(stdOutHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY));
+        NUTS_ALLOCATION_TRACE_IF_INIT("NutsMemoryResource (Allocation Successful): Address: {} ...", result);
         return result;
     }
 
     void NutsMemoryResource::do_deallocate(void* ptr, std::size_t bytes, std::size_t alignment) {
-        NUTS_LOG_WIN(auto stdOutHandle = ::GetStdHandle(STD_OUTPUT_HANDLE));
-        NUTS_LOG_WIN(::SetConsoleTextAttribute(stdOutHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY));
-        NUTS_LOG(std::cout << "NutsMemoryResource (Deallocation): Address: " << ptr << ", Size: " << bytes << ", Alignment: " << alignment << " ...\n");
-        NUTS_LOG_WIN(::SetConsoleTextAttribute(stdOutHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY));
+        NUTS_ALLOCATION_TRACE_IF_INIT("NutsMemoryResource (Deallocation): Address: {}, Size: {}, Alignment: {} ...", ptr, bytes, alignment);
         mUpStream->deallocate(ptr, bytes, alignment);
     }
 

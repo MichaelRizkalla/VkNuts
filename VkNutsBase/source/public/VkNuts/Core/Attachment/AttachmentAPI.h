@@ -17,9 +17,9 @@ namespace nuts {
         DELETE_COPY_CLASS(AttachmentAPI)
         DELETE_MOVE_CLASS(AttachmentAPI)
 
-        virtual void        OnLoad() noexcept                  = 0;
-        virtual void        OnUnload() noexcept                = 0;
-        virtual const char* GetAttachmentName() const noexcept = 0;
+        virtual void        onLoad() noexcept                  = 0;
+        virtual void        onUnload() noexcept                = 0;
+        virtual const char* getAttachmentName() const noexcept = 0;
     };
 
 } // namespace nuts

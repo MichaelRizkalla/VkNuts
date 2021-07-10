@@ -12,7 +12,7 @@ namespace nuts {
 
     /* Virtual helper structs */
     struct KeyEvent : public Event {
-        KeyCode GetKeyCode() const noexcept { return mKeyCode; }
+        KeyCode getKeyCode() const noexcept { return mKeyCode; }
 
         EVENT_CATEGORY_INTERFACE(EventCategory::Input | EventCategory::Keyboard)
 
@@ -24,7 +24,7 @@ namespace nuts {
     };
 
     struct MouseButtonEvent : public Event {
-        MouseCode GetMouseCode() const noexcept { return mButtonCode; }
+        MouseCode getMouseCode() const noexcept { return mButtonCode; }
 
         EVENT_CATEGORY_INTERFACE(EventCategory::Input | EventCategory::Mouse)
 
@@ -41,7 +41,7 @@ namespace nuts {
         KeyPressedEvent(KeyCode code, const uint16_t& count) : KeyEvent { code }, mCount { count } {}
         ~KeyPressedEvent() = default;
 
-        uint16_t GetCount() const noexcept { return mCount; }
+        uint16_t getCount() const noexcept { return mCount; }
 
         EVENT_TO_STRING_INTERFACE("KeyPressedEvent: Key pressed: " << mKeyCode << ", repeated: " << mCount << " times\n")
         EVENT_TYPE_INTERFACE(KeyPressed)
@@ -89,8 +89,8 @@ namespace nuts {
         MouseScrollTriggeredEvent(double xOffset, double yOffset) : mXOffset(xOffset), mYOffset(yOffset) {}
         ~MouseScrollTriggeredEvent() = default;
 
-        double GetXOffset() const noexcept { return mXOffset; }
-        double GetYOffset() const noexcept { return mYOffset; }
+        double getXOffset() const noexcept { return mXOffset; }
+        double getYOffset() const noexcept { return mYOffset; }
 
         EVENT_INTERFACE(MouseScrollTriggered, EventCategory::Input | EventCategory::Mouse, MouseScrollTriggeredEvent,
                         "MouseScrollTriggeredEvent: X-axis offset: " << mXOffset << ", Y-axis offset: " << mYOffset << '\n')
@@ -103,8 +103,8 @@ namespace nuts {
         MouseMovedEvent(double xPos, double yPos) : mXPos(xPos), mYPos(yPos) {}
         ~MouseMovedEvent() = default;
 
-        double GetXPosition() const noexcept { return mXPos; }
-        double GetYPosiiton() const noexcept { return mYPos; }
+        double getXPosition() const noexcept { return mXPos; }
+        double getYPosiiton() const noexcept { return mYPos; }
 
         EVENT_INTERFACE(MouseMoved, EventCategory::Input | EventCategory::Mouse, MouseMovedEvent,
                         "MouseMovedEvent: X-axis position: " << mXPos << ", Y-axis position: " << mYPos << '\n')

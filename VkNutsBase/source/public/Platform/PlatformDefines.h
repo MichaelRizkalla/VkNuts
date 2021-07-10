@@ -16,7 +16,7 @@
     #define NUTS_OS_WINDOWS
 #endif
 
-#ifdef NUTS_OS_WINDOWS_X64
+#if defined(NUTS_OS_WINDOWS)
     #ifndef NOMINMAX
         #define NOMINMAX
     #endif

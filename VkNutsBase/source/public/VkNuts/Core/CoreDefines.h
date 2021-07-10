@@ -7,7 +7,7 @@
         #define NUTS_LOG_WIN(x)
     #endif
 #else
-    #define NUTS_INTERNAL_LOG(logger, level, ...)
+    #define NUTS_INTERNAL_LOG(logger, level, ...) (void)(__VA_ARGS__)
     #define NUTS_LOG(x)
     #define NUTS_LOG_WIN(x)
 #endif

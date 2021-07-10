@@ -9,6 +9,10 @@
         #define NUTS_COMPILER_GNUC
         #define NUTS_INTERFACE_ONLY 
         #define NUTS_DLL(cond) __attribute__((cond))
+    #elif defined(__clang__)
+        #define NUTS_COMPILER_CLANG
+        #define NUTS_INTERFACE_ONLY
+        #define NUTS_DLL(cond) __attribute__((cond))
     #else
         #error "Unsupported compiler"
     #endif

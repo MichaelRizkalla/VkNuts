@@ -9,7 +9,7 @@
 
 namespace nuts {
     struct File {
-        static std::string Read(std::filesystem::path filePath, std::ios_base::openmode fileMode = std::ios::binary) {
+        static std::string read(std::filesystem::path filePath, std::ios_base::openmode fileMode = std::ios::binary) {
             std::ifstream mFile(filePath.string(), fileMode);
 
             if (!mFile.is_open()) {
@@ -56,7 +56,7 @@ namespace nuts {
         template < class ContainerType >
         requires(has_data_function< ContainerType >&& std::is_default_constructible_v< ContainerType >&& has_resize_function< ContainerType >&&
                      std::integral< typename ContainerType::value_type >) static ContainerType
-            Read(std::filesystem::path filePath, std::ios_base::openmode fileMode = std::ios::binary) {
+            read(std::filesystem::path filePath, std::ios_base::openmode fileMode = std::ios::binary) {
             constexpr auto ContainerTypeSize = static_cast< std::size_t >(sizeof(ContainerType::value_type));
 
             auto mFile = std::ifstream { filePath.string(), fileMode };
@@ -93,7 +93,7 @@ namespace nuts {
         template < class ContainerType >
         requires(has_data_function< ContainerType >&& std::is_default_constructible_v< ContainerType >&& has_resize_function< ContainerType >&&
                      std::integral< typename ContainerType::value_type >) static ContainerType
-            ReadImage(std::filesystem::path filePath, ImageLoadFormat imgFmt = ImageLoadFormat::RGBA, int* outTexWidth = nullptr, int* outTexHeight = nullptr,
+            readImage(std::filesystem::path filePath, ImageLoadFormat imgFmt = ImageLoadFormat::RGBA, int* outTexWidth = nullptr, int* outTexHeight = nullptr,
                       int* outTexChannel = nullptr) {
             constexpr auto ContainerTypeSize = static_cast< std::size_t >(sizeof(ContainerType::value_type));
 

@@ -14,10 +14,10 @@ namespace nuts {
     struct AttachmentShaderFileAPI : public AttachmentAPI {
         AttachmentShaderFileAPI();
         virtual ~AttachmentShaderFileAPI();
-        void OnLoad() noexcept override;
-        void OnUnload() noexcept override;
-        bool CreateVkShader(const vk::Device& device) noexcept;
-        void DestroyVkShader() noexcept;
+        void onLoad() noexcept override;
+        void onUnload() noexcept override;
+        bool createVkShader(const vk::Device& device) noexcept;
+        void destroyVkShader() noexcept;
 
       protected:
         Container< uint32_t > mShader;
@@ -35,7 +35,7 @@ namespace nuts {
         ShaderAttachment(const char* name);
         ~ShaderAttachment();
 
-        attachment_data GetAttachmentData() const override;
+        attachment_data getAttachmentData() const override;
     };
 
     struct ShaderRegistryInitializer : RegistryInitializer {
@@ -47,11 +47,11 @@ namespace nuts {
         ShaderRegistry();
         ~ShaderRegistry();
 
-        void Init(RegistryInitializer* init) noexcept override;
-        bool CreateVkShader(const char* alias) noexcept;
-        bool DestroyVkShader(const char* alias) noexcept;
+        void init(RegistryInitializer* init) noexcept override;
+        bool createVkShader(const char* alias) noexcept;
+        bool destroyVkShader(const char* alias) noexcept;
 
-        attachment_type::attachment_data QueryAttachment(const char* alias) const override;
+        attachment_data_type queryAttachment(const char* alias) const override;
 
       private:
         vk::Device mDevice;

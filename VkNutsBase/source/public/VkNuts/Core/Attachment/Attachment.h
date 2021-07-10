@@ -23,9 +23,9 @@ namespace nuts {
         Attachment(const char* name) : mAttachmentName(name) {}
         virtual ~Attachment() = default;
 
-        const char* GetAttachmentName() const noexcept override { return mAttachmentName; }
+        const char* getAttachmentName() const noexcept override { return mAttachmentName; }
 
-        virtual attachment_data GetAttachmentData() const = 0;
+        virtual attachment_data getAttachmentData() const = 0;
 
       protected:
         const char* mAttachmentName;

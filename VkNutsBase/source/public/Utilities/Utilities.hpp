@@ -2,8 +2,7 @@
 
 #include <Platform/CompilerDefines.h>
 #include <Platform/PlatformDefines.h>
-#include <array>
-#include <memory>
+#include <type_traits>
 
 #if defined(NUTS_OS_WINDOWS)
     #include <windows.h>
@@ -14,12 +13,6 @@
 #endif
 
 namespace nuts {
-    template < class Type, class Del = std::default_delete< Type > >
-    using UniqueRef = std::unique_ptr< Type, Del >;
-
-    template < class Type >
-    using SharedRef = std::shared_ptr< Type >;
-
     struct array_size {
         template < typename Type, size_t N >
         static constexpr auto get(Type (&)[N]) {

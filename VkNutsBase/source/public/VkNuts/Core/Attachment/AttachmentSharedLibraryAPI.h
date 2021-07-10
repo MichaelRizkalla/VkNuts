@@ -11,19 +11,19 @@ namespace nuts {
     struct AttachmentSharedLibraryAPI : public AttachmentAPI {
         AttachmentSharedLibraryAPI() : mHandle { nullptr } {}
         virtual ~AttachmentSharedLibraryAPI() {
-            if (mHandle) { OnUnload(); }
+            if (mHandle) { onUnload(); }
         }
 
-        void OnLoad() noexcept override {
+        void onLoad() noexcept override {
 #if defined(NUTS_OS_WINDOWS)
-            mHandle = ::LoadLibraryA(GetAttachmentName());
+            mHandle = ::LoadLibraryA(getAttachmentName());
 #elif defined(NUTS_OS_LINUX)
             mHandle = dlopen(mAttachmentName, RTLD_NOW | RTLD_LOCAL);
 #else
     #error "OS not yet supported!"
 #endif
         }
-        void OnUnload() noexcept override {
+        void onUnload() noexcept override {
             if (mHandle) {
 #if defined(NUTS_OS_WINDOWS)
                 ::FreeLibrary(static_cast< HMODULE >(mHandle));

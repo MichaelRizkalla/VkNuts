@@ -12,15 +12,19 @@ project(VkNutsBase CXX)
 set(EXTERN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../extern")
 
 file(GLOB PLATFORM_PUBLIC "source/public/Platform/*.*")
+file(GLOB PLATFORM_PRIVATE "source/private/Platform/*.*")
 file(GLOB PLATFORM_GENERIC_PUBLIC "source/public/Platform/Generic/*.*")
 file(GLOB PLATFORM_VULKAN_PRIVATE "source/private/Platform/Vulkan/*.*")
+file(GLOB PLATFORM_VULKAN_VKMANAGEMENT_PRIVATE "source/private/Platform/Vulkan/VkManagement/*.*")
 file(GLOB VKNUTSBASE_PUBLIC "source/public/*.*")
 file(GLOB VKNUTS_CORE_PUBLIC "source/public/VkNuts/Core/*.*")
 file(GLOB VKNUTS_CORE_ATTACHMENT_PUBLIC "source/public/VkNuts/Core/Attachment/*.*")
 file(GLOB VKNUTS_CORE_ENGINE_PRIVATE "source/private/VkNuts/Core/Engine/*.*")
 file(GLOB VKNUTS_CORE_ENGINE_PUBLIC "source/public/VkNuts/Core/Engine/*.*")
 file(GLOB VKNUTS_CORE_EVENT_PUBLIC "source/public/VkNuts/Core/Event/*.*")
+file(GLOB VKNUTS_CORE_LOG_PUBLIC "source/public/VkNuts/Core/Log/*.*")
 file(GLOB VKNUTS_CORE_LOG_PRIVATE "source/private/VkNuts/Core/Log/*.*")
+file(GLOB VKNUTS_CORE_MEMORY_MANAGEMENT_PUBLIC "source/public/VkNuts/Core/MemoryManagement/*.*")
 file(GLOB VKNUTS_CORE_MEMORY_MANAGEMENT_PRIVATE "source/private/VkNuts/Core/MemoryManagement/*.*")
 file(GLOB VKNUTS_CORE_REGISTRY_PUBLIC "source/public/VkNuts/Core/Registry/*.*")
 file(GLOB VKNUTS_CORE_WINDOW_PRIVATE "source/private/VkNuts/Core/Window/*.*")
@@ -45,7 +49,7 @@ set(GLM_INCLUDE_DIR "${EXTERN_DIR}/glm/")
 set(IMGUI_INCLUDE_DIR "${EXTERN_DIR}/imgui/")
 set(SPDLOG_INCLUDE_DIR "${EXTERN_DIR}/spdlog/include")
 set(STBIMAGE_INCLUDE_DIR "${EXTERN_DIR}/stb/")
-set(VULKAN_INCLUDE_DIR "${EXTERN_DIR}/vulkan-1.2.162.0/")
+set(VULKAN_INCLUDE_DIR "${EXTERN_DIR}/vulkan/")
 set(VULKAN_MEM_ALLOC_INCLUDE_DIR "${EXTERN_DIR}/VulkanMemoryAllocator/")
 
 ################################################################################
@@ -53,14 +57,18 @@ set(VULKAN_MEM_ALLOC_INCLUDE_DIR "${EXTERN_DIR}/VulkanMemoryAllocator/")
 ################################################################################
 source_group("VkNutsBase/" FILES ${VKNUTSBASE_PUBLIC})
 source_group("VkNutsBase/Platform/" FILES ${PLATFORM_PUBLIC})
+source_group("VkNutsBase/Platform/" FILES ${PLATFORM_PRIVATE})
 source_group("VkNutsBase/Platform/Generic/" FILES ${PLATFORM_GENERIC_PUBLIC})
 source_group("VkNutsBase/Platform/Vulkan/" FILES ${PLATFORM_VULKAN_PRIVATE})
+source_group("VkNutsBase/Platform/Vulkan/VkManagement/" FILES ${PLATFORM_VULKAN_VKMANAGEMENT_PRIVATE})
 source_group("VkNutsBase/VKNuts/Core/" FILES ${VKNUTS_CORE_PUBLIC})
 source_group("VkNutsBase/VKNuts/Core/Attachment/" FILES ${VKNUTS_CORE_ATTACHMENT_PUBLIC})
 source_group("VkNutsBase/VKNuts/Core/Engine/" FILES ${VKNUTS_CORE_ENGINE_PRIVATE})
 source_group("VkNutsBase/VKNuts/Core/Engine/" FILES ${VKNUTS_CORE_ENGINE_PUBLIC})
 source_group("VkNutsBase/VKNuts/Core/Event/" FILES ${VKNUTS_CORE_EVENT_PUBLIC})
+source_group("VkNutsBase/VKNuts/Core/Log/" FILES ${VKNUTS_CORE_LOG_PUBLIC})
 source_group("VkNutsBase/VKNuts/Core/Log/" FILES ${VKNUTS_CORE_LOG_PRIVATE})
+source_group("VkNutsBase/VKNuts/Core/MemoryManagement/" FILES ${VKNUTS_CORE_MEMORY_MANAGEMENT_PUBLIC})
 source_group("VkNutsBase/VKNuts/Core/MemoryManagement/" FILES ${VKNUTS_CORE_MEMORY_MANAGEMENT_PRIVATE})
 source_group("VkNutsBase/VKNuts/Core/Registry/" FILES ${VKNUTS_CORE_REGISTRY_PUBLIC})
 source_group("VkNutsBase/VkNuts/Core/Window/" FILES ${VKNUTS_CORE_WINDOW_PRIVATE})
@@ -101,7 +109,7 @@ target_link_libraries(VkNutsBase PUBLIC
                             "${VULKAN_INCLUDE_DIR}Lib/vulkan-1.lib" 
                             "${VULKAN_INCLUDE_DIR}Lib/VkLayer_utils.lib" )
 
-target_compile_definitions(VkNutsBase PRIVATE -DNUTS_BUILD_DLL)
+target_compile_definitions(VkNutsBase PRIVATE -DNUTS_BUILD_DLL -DNUTS_BUILD_ENGINE)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_definitions(VkNutsBase PRIVATE -DNUTS_ENABLE_LOG)
@@ -111,39 +119,39 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(VkNutsBase PRIVATE 
-                                    -Wall -fexceptions -std=c++17 -Wpedantic -Werror 
+                                    -Wall -fexceptions -std=c++20 -Wpedantic -Werror 
                                     -Wno-unknown-pragmas -Wno-unused-function -Oo)
     target_link_options(VkNutsBase PRIVATE -s)
 
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_BUILD_TYPE MATCHES "Release")
     target_compile_options(VkNutsBase PRIVATE 
-                                    -Wall -fexceptions -std=c++17 -Wpedantic -Werror 
+                                    -Wall -fexceptions -std=c++20 -Wpedantic -Werror 
                                     -Wno-unknown-pragmas -Wno-unused-function -O3)
     target_link_options(VkNutsBase PRIVATE -s)
 
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(VkNutsBase PRIVATE 
-                                    -Wall -fexceptions -std=c++17 -Wpedantic -Werror 
+                                    -Wall -fexceptions -std=c++20 -Wpedantic -Werror 
                                     -Wno-unknown-pragmas -Wno-unused-function -Oo)
     target_link_options(VkNutsBase PRIVATE -s)
 
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_BUILD_TYPE MATCHES "Release")
     target_compile_options(VkNutsBase PRIVATE 
-                                    -Wall -fexceptions -std=c++17 -Wpedantic -Werror 
+                                    -Wall -fexceptions -std=c++20 -Wpedantic -Werror 
                                     -Wno-unknown-pragmas -Wno-unused-function -O3)
     target_link_options(VkNutsBase PRIVATE -s)
 
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(VkNutsBase PRIVATE 
-                                    /W4 /WX- /permissive- /std:c++17
+                                    /W4 /WX- /permissive- /std:c++20
                                     /TP /Gd /Gm- /RTC1 /Od /diagnostics:classic
                                     /fp:precise /EHsc)
     target_link_options(VkNutsBase PRIVATE /INCREMENTAL /MACHINE:X64)
 
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" AND CMAKE_BUILD_TYPE MATCHES "Release")
     target_compile_options(VkNutsBase PRIVATE 
-                                    /W4 /WX- /permissive- /std:c++17
+                                    /W4 /WX- /permissive- /std:c++20
                                     /TP /Gd /Gm- /diagnostics:classic
-                                    /fp:precise /EHsc /Ob2 /Ox /Oi)
+                                    /fp:precise /EHsc /Ob2 /O2 /Oi)
     target_link_options(VkNutsBase PRIVATE /INCREMENTAL /MACHINE:X64)
 endif()

@@ -5,19 +5,6 @@
 // clang-format on
 
 #include <Utilities/Utilities.hpp>
-#include <iostream>
-#include <memory>
-#include <vector>
-
-#define VULKAN_HPP_STORAGE_SHARED
-#if defined(NUTS_BUILD_DLL)
-    #define VULKAN_HPP_STORAGE_SHARED_EXPORT
-#endif
-
-#define VK_USE_PLATFORM_WIN32_KHR
-#define VK_NO_PROTOTYPES
-#include <vulkan/vulkan.hpp>
-
 #include <Platform/Vulkan/IWindow.h>
 
 namespace nuts {
@@ -28,12 +15,6 @@ namespace nuts {
         SelectFirst,
         SelectLast,
         SelectLatestAPI,
-    };
-
-    enum class ImageUsage {
-        MSAA,
-        DepthTest,
-        ShadowMap,
     };
 
     struct InstanceData {
@@ -65,61 +46,30 @@ namespace nuts {
         vk::SurfaceTransformFlagBitsKHR transform;
     };
 
-    struct ImageData {
-        vk::Extent3D            extent;
-        vk::Format              format;
-        uint32_t                layers;
-        vk::SampleCountFlagBits sampleCount;
-        ImageUsage              usage;
-    };
-
-    struct SamplerData {
-        vk::Filter             minFilter;
-        vk::Filter             magFilter;
-        vk::SamplerMipmapMode  mipmapMode;
-        vk::SamplerAddressMode addressMode;
-        float                  mipLodBias;
-        vk::Bool32             anistropyEnable;
-        float                  maxAnistropy;
-        vk::Bool32             CompareEnable;
-        vk::CompareOp          compareOp;
-        float                  minLod;
-        float                  maxLod;
-        vk::BorderColor        borderColor;
-        vk::Bool32             unnormalizedCoords;
-    };
-
     struct VulkanHelper {
-        VulkanHelper()                    = delete;
-        VulkanHelper(const VulkanHelper&) = delete;
-        VulkanHelper(VulkanHelper&&)      = delete;
-        VulkanHelper& operator=(const VulkanHelper&) = delete;
-        VulkanHelper& operator=(VulkanHelper&&) = delete;
-        ~VulkanHelper()                         = delete;
+        STATIC_CLASS(VulkanHelper)
 
         // Create instance and device
-        NUTS_API [[nodiscard]] static vk::Instance CreateInstance(const InstanceData& instanceData, uint32_t requestedExtensionsCount, const char** pRequestedExtensions);
-        NUTS_API [[nodiscard]] static vk::Instance CreateInstance(const InstanceData& instanceData);
-        NUTS_API [[nodiscard]] static vk::Device   CreateDevice(const DeviceData& deviceData);
-        NUTS_API [[nodiscard]] static vk::Device   CreateDevice(const DeviceData& deviceData, uint32_t requestedDeviceExtensionsCount,
+        NUTS_API [[nodiscard]] static vk::Instance createInstance(const InstanceData& instanceData, uint32_t requestedExtensionsCount, const char** pRequestedExtensions);
+        NUTS_API [[nodiscard]] static vk::Instance createInstance(const InstanceData& instanceData);
+        NUTS_API [[nodiscard]] static vk::Device   createDevice(const DeviceData& deviceData);
+        NUTS_API [[nodiscard]] static vk::Device   createDevice(const DeviceData& deviceData, uint32_t requestedDeviceExtensionsCount,
                                                                 const char** pRequestedDeviceExtensions);
-        NUTS_API [[nodiscard]] static vk::SurfaceKHR CreateSurface(const vk::Instance& instance, IWindow* window);
+        NUTS_API [[nodiscard]] static vk::SurfaceKHR createSurface(const vk::Instance& instance, IWindow* window);
 
         // Selectors
-        NUTS_API [[nodiscard]] static vk::PhysicalDevice SelectPhysicalDevice(const vk::Instance& instance, PhsyicalDeviceSelectionStrategy strategy);
-        NUTS_API [[nodiscard]] static uint32_t SelectQueueFamilyIndex(const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface, vk::QueueFlags queueFlags);
-        NUTS_API [[nodiscard]] static vk::SurfaceFormatKHR SelectSurfaceFormat(const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface,
+        NUTS_API [[nodiscard]] static vk::PhysicalDevice selectPhysicalDevice(const vk::Instance& instance, PhsyicalDeviceSelectionStrategy strategy);
+        NUTS_API [[nodiscard]] static uint32_t selectQueueFamilyIndex(const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface, vk::QueueFlags queueFlags);
+        NUTS_API [[nodiscard]] static vk::SurfaceFormatKHR selectSurfaceFormat(const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface,
                                                                                vk::Format preferredFormat = vk::Format::eR8G8B8A8Unorm);
-        NUTS_API [[nodiscard]] static vk::PresentModeKHR   SelectPresentMode(const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface,
+        NUTS_API [[nodiscard]] static vk::PresentModeKHR   selectPresentMode(const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface,
                                                                              vk::PresentModeKHR preferredMode = vk::PresentModeKHR::eImmediate);
 
-        // Create vk objects
-        NUTS_API [[nodiscard]] static vk::SwapchainKHR CreateSwapchain(const vk::Device& device, const SwapchainData& swapChainData);
-        NUTS_API [[nodiscard]] static vk::Image        Create2DImage(const vk::Device& device, const ImageData& imageData);
-        NUTS_API [[nodiscard]] static vk::Sampler      CreateSampler(const vk::Device& device, const SamplerData& samplerData);
+        // Create vk swapchain
+        NUTS_API [[nodiscard]] static vk::SwapchainKHR createSwapchain(const vk::Device& device, const SwapchainData& swapChainData);
 
         // Debugging
-        NUTS_API [[nodiscard]] static vk::DebugUtilsMessengerEXT CreateDebugUtilsMessenger(const vk::Instance& instance);
+        NUTS_API [[nodiscard]] static vk::DebugUtilsMessengerEXT createDebugUtilsMessenger(const vk::Instance& instance);
 
       private:
         static vk::DynamicLoader mDynamicLoader;

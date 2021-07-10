@@ -3,11 +3,16 @@
 // clang-format on
 
 #include <Platform/LibraryInit.h>
+#include <VkNuts/Core/MemoryManagement/NutsMemoryResource.h>
 
 namespace nuts {
     struct LibraryInit final {
-        LibraryInit() { std::pmr::set_default_resource(get_nuts_memory_resource()); }
-        ~LibraryInit() { std::pmr::set_default_resource(std::pmr::new_delete_resource()); }
+        std::pmr::memory_resource* mDefaultMemoryResource;
+
+        LibraryInit() : mDefaultMemoryResource(std::pmr::get_default_resource()) { 
+            std::pmr::set_default_resource(get_nuts_memory_resource()); 
+        }
+        ~LibraryInit() { std::pmr::set_default_resource(mDefaultMemoryResource); }
     };
 
     namespace {

@@ -24,15 +24,19 @@ namespace nuts {
 
     Window::Window() : mWindow(nullptr) {}
 
-    Window::~Window() = default;
+    Window::~Window() { 
+        finalize(); 
+    };
 
-    UniqueRef< Window > Window::Create() {
+    UniqueRef< Window > Window::create() {
         struct WindowMaker : public Window {
             WindowMaker()  = default;
             ~WindowMaker() = default;
         };
 
-        return std::make_unique< WindowMaker >();
+        std::pmr::polymorphic_allocator< std::byte > alloc {};
+
+        return allocate_unique< Window, WindowMaker >(alloc);
     }
 
     const GLFWwindow* Window::getHandle() const noexcept { return reinterpret_cast< const GLFWwindow* >(mWindow); }
@@ -50,38 +54,38 @@ namespace nuts {
     Window::NativeHandle Window::getNativeHandle() noexcept { return const_cast< NativeHandle >(reinterpret_cast< const Window* >(this)->getNativeHandle()); }
 
     // Get and set window props
-    std::uint32_t Window::GetWidth() const noexcept { return mWindowProperties.Width; }
+    std::uint32_t Window::getWidth() const noexcept { return mWindowProperties.Width; }
 
-    std::uint32_t Window::GetHeight() const noexcept { return mWindowProperties.Height; }
+    std::uint32_t Window::getHeight() const noexcept { return mWindowProperties.Height; }
 
-    const char* Window::GetTitle() const noexcept { return mWindowProperties.Title; }
+    const char* Window::getTitle() const noexcept { return mWindowProperties.Title; }
 
-    bool Window::HasVSync() const noexcept { return mWindowProperties.VSync; }
+    bool Window::hasVSync() const noexcept { return mWindowProperties.VSync; }
 
-    void Window::SetEventCallback(EventCallbackSignature&& callback) noexcept { mWindowProperties.EventCallback = callback; }
+    void Window::setEventCallback(EventCallbackSignature&& callback) noexcept { mWindowProperties.EventCallback = callback; }
 
-    void Window::SetVSync(bool vsync) noexcept { mWindowProperties.VSync = vsync; }
+    void Window::setVSync(bool vsync) noexcept { mWindowProperties.VSync = vsync; }
 
-    bool Window::UpdateWindowCallbacks(const char* callbackLib, const char* alias) noexcept {
-        if (!mRegistry.HasAttachment(alias)) { mRegistry.AttachAttachment(alias, callbackLib); }
+    bool Window::updateWindowCallbacks(const char* callbackLib, const char* alias) noexcept {
+        if (!mRegistry.hasAttachment(alias)) { mRegistry.attachAttachment(alias, callbackLib); }
         try {
-            auto data = mRegistry.QueryAttachment(alias);
+            auto data = mRegistry.queryAttachment(alias);
 
-            glfwSetWindowSizeCallback(mWindow, data.WindowResizeFunc);
-            glfwSetWindowCloseCallback(mWindow, data.WindowCloseFunc);
-            glfwSetKeyCallback(mWindow, data.KeyIOFunc);
-            glfwSetCharCallback(mWindow, data.CharIOFunc);
-            glfwSetMouseButtonCallback(mWindow, data.MouseButtonFunc);
-            glfwSetScrollCallback(mWindow, data.MouseScrollFunc);
-            glfwSetCursorPosCallback(mWindow, data.CursorPositionFunc);
+            glfwSetWindowSizeCallback(mWindow, data.windowResizeFunc);
+            glfwSetWindowCloseCallback(mWindow, data.windowCloseFunc);
+            glfwSetKeyCallback(mWindow, data.keyIOFunc);
+            glfwSetCharCallback(mWindow, data.charIOFunc);
+            glfwSetMouseButtonCallback(mWindow, data.mouseButtonFunc);
+            glfwSetScrollCallback(mWindow, data.mouseScrollFunc);
+            glfwSetCursorPosCallback(mWindow, data.cursorPositionFunc);
 
             return true;
         } catch (...) { return false; }
     }
 
-    bool Window::Init(const WindowProperties& windowProperties) noexcept {
+    bool Window::init(const WindowProperties& windowProperties) noexcept {
 
-        return Init(windowProperties,
+        return init(windowProperties,
 #if defined(NUTS_OS_WINDOWS)
                     "vknuts-windowcallback.dll"
 #elif defined(NUTS_OS_LINUX)
@@ -89,12 +93,13 @@ namespace nuts {
 #else
     #error "OS is not yet supported!"
 #endif
-        , "vknuts-windowcallback");
+                    ,
+                    "vknuts-windowcallback");
     }
 
-    bool Window::Init(const WindowProperties& windowProperties, const char* callbackLib, const char* alias) noexcept {
+    bool Window::init(const WindowProperties& windowProperties, const char* callbackLib, const char* alias) noexcept {
         mWindowProperties = windowProperties;
-        mRegistry.Init(nullptr);
+        mRegistry.init(nullptr);
 
         mMutex.lock();
         if (!isGLFWInitialized.load()) {
@@ -118,12 +123,11 @@ namespace nuts {
         nWindowsInitialized++;
         glfwSetWindowUserPointer(mWindow, &mWindowProperties);
 
-
         // Set callbacks
-        return UpdateWindowCallbacks(callbackLib, alias);
+        return updateWindowCallbacks(callbackLib, alias);
     }
 
-    bool Window::Finalize() noexcept {
+    bool Window::finalize() noexcept {
         glfwDestroyWindow(mWindow);
 
         nWindowsInitialized--;
@@ -133,8 +137,8 @@ namespace nuts {
         return true;
     }
 
-    bool Window::LoadAttachment(const char* callbackLib, const char* alias) noexcept { return mRegistry.AttachAttachment(alias, callbackLib); }
+    bool Window::loadAttachment(const char* callbackLib, const char* alias) noexcept { return mRegistry.attachAttachment(alias, callbackLib); }
 
-    bool Window::UnloadAttachment(const char* alias) noexcept { return mRegistry.DetachAttachment(alias); }
+    bool Window::unloadAttachment(const char* alias) noexcept { return mRegistry.detachAttachment(alias); }
 
 } // namespace nuts

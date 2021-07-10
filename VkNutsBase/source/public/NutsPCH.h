@@ -20,7 +20,21 @@
 #include <utility>
 #include <vector>
 
+#include <Utilities/TypeAlias.h>
 #include <VkNuts/Core/CoreDefines.h>
-#if defined(NUTS_ENABLE_LOG)
+#if defined(NUTS_BUILD_ENGINE)
     #include <VkNuts/Core/Log/Log.h>
+
+    #define VULKAN_HPP_STORAGE_SHARED
+    #if defined(NUTS_BUILD_DLL)
+        #define VULKAN_HPP_STORAGE_SHARED_EXPORT
+    #endif
+
+    #if defined(NUTS_OS_WINDOWS)
+        #define VK_USE_PLATFORM_WIN32_KHR
+    #else
+        #error "OS support to be implemented!"
+    #endif
+    #define VK_NO_PROTOTYPES
+    #include <vulkan/vulkan.hpp>
 #endif

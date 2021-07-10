@@ -6,25 +6,25 @@
 #include <Platform/Generic/MouseCode.h>
 #include <Platform/Generic/KeyCode.h>
 
-const char* GetUsage() {
+const char* getUsage() {
     return "WindowCallbackAttachment";
 }
 
-void OnChar(GLFWwindow* window, unsigned int keyCode) {
+void onChar(GLFWwindow* window, unsigned int keyCode) {
     nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(window));
 
     nuts::KeyCharacterEvent mEvent { static_cast< nuts::KeyCode >(keyCode) };
     data.EventCallback(mEvent);
 }
 
-void OnCursorPosition(GLFWwindow* window, double xPos, double yPos) {
+void onCursorPosition(GLFWwindow* window, double xPos, double yPos) {
     nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(window));
 
     nuts::MouseMovedEvent mEvent { xPos, yPos };
     data.EventCallback(mEvent);
 }
 
-void OnKey(GLFWwindow* window, int key, int scanCode, int action, int mods) {
+void onKey(GLFWwindow* window, int key, int scanCode, int action, int mods) {
     (void)scanCode, mods;
     nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(window));
 
@@ -44,7 +44,7 @@ void OnKey(GLFWwindow* window, int key, int scanCode, int action, int mods) {
     }
 }
 
-void OnMouseButton(GLFWwindow* window, int button, int action, int mods) {
+void onMouseButton(GLFWwindow* window, int button, int action, int mods) {
     (void)mods;
     nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(window));
 
@@ -60,21 +60,21 @@ void OnMouseButton(GLFWwindow* window, int button, int action, int mods) {
     }
 }
 
-void OnMouseScroll(GLFWwindow* window, double xOffset, double yOffset) {
+void onMouseScroll(GLFWwindow* window, double xOffset, double yOffset) {
     nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(window));
 
     nuts::MouseScrollTriggeredEvent mEvent { xOffset, yOffset };
     data.EventCallback(mEvent);
 }
 
-void OnWindowClose(GLFWwindow* window) {
+void onWindowClose(GLFWwindow* window) {
     nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(window));
 
     nuts::WindowClosedEvent mEvent {};
     data.EventCallback(mEvent);
 }
 
-void OnWindowReSize(GLFWwindow* window, int width, int height) {
+void onWindowReSize(GLFWwindow* window, int width, int height) {
     nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(window));
     data.Width                   = width;
     data.Height                  = height;
