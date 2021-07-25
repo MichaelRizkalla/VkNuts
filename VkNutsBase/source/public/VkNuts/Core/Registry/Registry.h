@@ -7,34 +7,39 @@
 #include <VkNuts/Core/Attachment/Attachment.h>
 
 namespace nuts {
-    template < class TAttachmentType >
-    requires(
-        std::is_base_of_v< Attachment< typename TAttachmentType::attachment_data, typename TAttachmentType::attachment_api >, TAttachmentType >) struct RegistryQuery {
-      public:
-        virtual typename TAttachmentType::attachment_data queryAttachment(const char* alias) const = 0;
-    };
-
     struct RegistryInitializer {};
 
-    template < class TAttachmentType, class TRegistryQueryAPI = RegistryQuery< TAttachmentType > >
-    class Registry : public TRegistryQueryAPI {
+    /// <summary>
+    ///
+    /// </summary>
+    /// <typeparam name="TAttachmentType"></typeparam>
+    /// <typeparam name="Allocator"></typeparam>
+    template < class TAttachmentType, class Allocator = std::pmr::polymorphic_allocator< TAttachmentType > >
+    class Registry {
       protected:
-        DEFAULT_INTERFACE(Registry)
+        DEFAULT_CTOR(Registry)
+        DEFAULT_DTOR(Registry)
+        DELETE_MOVE_CLASS(Registry)
+        DELETE_COPY_CLASS(Registry)
 
       public:
-        using attachment_type      = TAttachmentType;
-        using attachment_data_type = typename TAttachmentType::attachment_data;
-        using attachment_api_type  = typename TAttachmentType::attachment_api;
+        using allocator_type  = Allocator;
+        using attachment_type = TAttachmentType;
 
-        virtual void init(RegistryInitializer*) noexcept = 0;
+        virtual void init(const RegistryInitializer* const) noexcept = 0;
+        virtual void finalize() noexcept {
+            detachAllAttachments();
+        }
         // TODO: Rename the function maybe?
         template < class... Types >
         bool attachAttachment(const char* alias, const char* nameOnDesk, Types&&... _InTypes) noexcept {
             try {
                 std::lock_guard guard { mMutex };
                 auto            result = std::find_if(mRegistry.begin(), mRegistry.end(), [&](auto& itr) {
-                    if (itr.first == alias) return true;
-                    if (std::strcmp(itr.second->getAttachmentName(), nameOnDesk) == 0) return true;
+                    if (itr.first == alias)
+                        return true;
+                    if (std::strcmp(itr.second->getAttachmentName(), nameOnDesk) == 0)
+                        return true;
                     return false;
                 });
                 if (result != mRegistry.end()) {
@@ -45,8 +50,10 @@ namespace nuts {
                     }
                     return false;
                 }
-                auto mAttachment = std::make_unique< attachment_type >(nameOnDesk, std::forward< Types&& >(_InTypes)...);
-                mAttachment->onLoad();
+                auto mAttachment = allocate_unique< attachment_type >(allocator_type {}, nameOnDesk, std::forward< Types&& >(_InTypes)...);
+                if (!mAttachment->onLoad()) {
+                    return false;
+                }
 
                 mRegistry.insert(std::make_pair(alias, std::move(mAttachment)));
                 return true;
@@ -78,9 +85,19 @@ namespace nuts {
                 return false;
             }
         }
+        const attachment_type* const getAttachment(const char* alias) const noexcept {
+            try {
+                return mRegistry.at(alias).get();
+            } catch (std::out_of_range& e) {
+                NUTS_ENGINE_ERROR("getAttachment failed with exception: {}", e.what());
+                return nullptr;
+            }
+        }
 
         // Better to return a const ref, to avoid copies ??
-        const HashMap< const char*, UniqueRef< attachment_type > >& getAttachments() const noexcept { return mRegistry; }
+        const HashMap< const char*, UniqueRef< attachment_type > >& getAttachments() const noexcept {
+            return mRegistry;
+        }
 
       protected:
         // Alias -- Attachment

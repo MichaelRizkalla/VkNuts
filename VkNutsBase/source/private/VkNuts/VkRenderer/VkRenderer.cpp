@@ -20,11 +20,11 @@ namespace nuts {
         mDevice         = device;
 
         ShaderRegistryInitializer shaderRegistryInit {};
-        shaderRegistryInit.mDevice = mDevice;
+        shaderRegistryInit.mDefaultDevice = mDevice;
         mShaderRegistry.init(&shaderRegistryInit);
 
         ImageRegistryInitializer imageRegistryInit {};
-        imageRegistryInit.mDevice = mDevice;
+        imageRegistryInit.mDefaultDevice = mDevice;
         mImageRegistry.init(&imageRegistryInit);
 
         mAllocator.init(mInstance, mDevice, mPhysicalDevice);
@@ -39,26 +39,50 @@ namespace nuts {
         mAllocator.finalize();
     }
 
-    bool             VkRenderer::loadShader(const char* shaderPath, const char* alias) noexcept { return mShaderRegistry.attachAttachment(alias, shaderPath); }
-    bool             VkRenderer::createShader(const char* alias) noexcept { return mShaderRegistry.createVkShader(alias); }
-    bool             VkRenderer::destroyShader(const char* alias) noexcept { return mShaderRegistry.destroyVkShader(alias); }
-    vk::ShaderModule VkRenderer::getShader(const char* alias) { return mShaderRegistry.queryAttachment(alias).mVkShaderModule; }
-
-    bool VkRenderer::loadImage(const char* imagePath, const char* alias, ImageLoadFormat fmt) noexcept { return mImageRegistry.attachAttachment(alias, imagePath, fmt); }
-    bool VkRenderer::createImage(const char* alias, const vk::ImageCreateInfo* imageCreateInfo, const vk::ImageViewCreateInfo* imageViewCreateInfo,
-                                 const vk::MemoryPropertyFlags memoryPropertyFlags) noexcept {
-        return mImageRegistry.createVkImage(alias, imageCreateInfo, imageViewCreateInfo, memoryPropertyFlags);
+    bool VkRenderer::loadShader(const char* shaderPath, const char* alias) noexcept {
+        return mShaderRegistry.attachAttachment(alias, shaderPath);
     }
-    bool          VkRenderer::destroyImage(const char* alias) noexcept { return mImageRegistry.destroyVkImage(alias); }
-    vk::Image     VkRenderer::getVkImage(const char* alias) { return mImageRegistry.queryAttachment(alias).mTexture.image; }
-    vk::ImageView VkRenderer::getVkImageView(const char* alias) { return mImageRegistry.queryAttachment(alias).mTexture.imageView; }
+    bool VkRenderer::createShader(const char* alias) noexcept {
+        return mShaderRegistry.createVkShader(alias);
+    }
+    bool VkRenderer::destroyShader(const char* alias) noexcept {
+        return mShaderRegistry.destroyVkShader(alias);
+    }
+    vk::ShaderModule VkRenderer::getShader(const char* alias) {
+        return VkRenderer::queryVulkanRegistry(mShaderRegistry, alias);
+        /* auto attachment = mShaderRegistry.getAttachment(alias);
+        return attachment ? attachment->getVkHandle() : VK_NULL_HANDLE;*/
+    }
+
+    bool VkRenderer::loadImage(const char* imagePath, const char* alias, ImageLoadFormat fmt) noexcept {
+        return mImageRegistry.attachAttachment(alias, imagePath, fmt);
+    }
+    bool VkRenderer::createImage(const char* alias, const vk::ImageCreateInfo* imageCreateInfo, const vk::MemoryPropertyFlags memoryPropertyFlags) noexcept {
+        return mImageRegistry.createVkImage(alias, imageCreateInfo, memoryPropertyFlags);
+    }
+    bool VkRenderer::destroyImage(const char* alias) noexcept {
+        return mImageRegistry.destroyVkImage(alias);
+    }
+    vk::Image VkRenderer::getVkImage(const char* alias) {
+        return VkRenderer::queryVulkanRegistry(mImageRegistry, alias);
+        /* auto attachment = mImageRegistry.getAttachment(alias);
+        return attachment ? attachment->getVkHandle() : VK_NULL_HANDLE;*/
+    }
+
+    template < class TRegistry, class Type >
+    inline Type VkRenderer::queryVulkanRegistry(const TRegistry& registry, const char* alias) noexcept {
+        auto attachment = registry.getAttachment(alias);
+        return attachment ? attachment->getVkHandle() : VK_NULL_HANDLE;
+    }
 
     uint32_t VkRenderer::getMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
         vk::PhysicalDeviceMemoryProperties memProperties;
         mPhysicalDevice.getMemoryProperties(&memProperties);
 
         for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) { return i; }
+            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+                return i;
+            }
         }
 
         return 0;

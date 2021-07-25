@@ -9,12 +9,9 @@
 #include <VkNuts/Module/Module.h>
 
 namespace nuts {
-    class ModuleRegistry : Singleton< ModuleRegistry > {
+    class ModuleRegistry : Registry< Module > {
       protected:
         ModuleRegistry();
         ~ModuleRegistry();
-
-      private:
-        std::unordered_map< std::string, Module > mModules;
     };
 } // namespace nuts

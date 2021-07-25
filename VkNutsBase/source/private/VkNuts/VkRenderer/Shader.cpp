@@ -5,57 +5,68 @@
 #include <VkNuts/VkRenderer/Shader.h>
 
 namespace nuts {
-    AttachmentShaderFileAPI::AttachmentShaderFileAPI() = default;
-    AttachmentShaderFileAPI::~AttachmentShaderFileAPI() { onUnload(); }
-    void AttachmentShaderFileAPI::onLoad() noexcept {
+
+    ShaderAttachment::ShaderAttachment(const char* name) : VulkanAttachment { name } {};
+    ShaderAttachment::~ShaderAttachment() {
+        if (mVkHandle) {
+            onUnload();
+        }
+    }
+
+    bool ShaderAttachment::onLoad() noexcept {
         try {
             mShader = std::move(File::read< Container< uint32_t > >(getAttachmentName(), std::ios::binary));
-        } catch (...) { return; }
+            return true;
+        } catch (...) {
+            return false;
+        }
     }
-    void AttachmentShaderFileAPI::onUnload() noexcept { destroyVkShader(); }
-    bool AttachmentShaderFileAPI::createVkShader(const vk::Device& device) noexcept {
-        if (!mVkShader) {
+    bool ShaderAttachment::onUnload() noexcept {
+        destroyVkShader();
+        return true;
+    }
+    bool ShaderAttachment::createVkShader(const vk::Device& device) noexcept {
+        if (!mVkHandle) {
             mDevice = device;
             // TODO: Better manage exceptions
             vk::ShaderModuleCreateInfo shaderModuleCreateInfo {};
             shaderModuleCreateInfo.setCodeSize(mShader.sizeInBytes());
             shaderModuleCreateInfo.setPCode(mShader.data());
 
-            if (vk::Result::eSuccess != device.createShaderModule(&shaderModuleCreateInfo, nullptr, &mVkShader)) return false;
+            if (vk::Result::eSuccess != device.createShaderModule(&shaderModuleCreateInfo, nullptr, &mVkHandle))
+                return false;
             return true;
         }
         return false;
     }
-    void AttachmentShaderFileAPI::destroyVkShader() noexcept {
-        if (mVkShader) mDevice.destroyShaderModule(mVkShader);
+    void ShaderAttachment::destroyVkShader() noexcept {
+        if (mVkHandle)
+            mDevice.destroyShaderModule(mVkHandle);
     }
-
-    ShaderAttachment::ShaderAttachment(const char* name) : Attachment { name } {};
-    ShaderAttachment::~ShaderAttachment() = default;
-    ShaderAttachment::attachment_data ShaderAttachment::getAttachmentData() const { return attachment_data { mShader.data(), mShader.sizeInBytes(), mVkShader }; }
+    ShaderAttachment::attachment_data ShaderAttachment::getData() const noexcept {
+        return attachment_data { mShader.data(), mShader.sizeInBytes(), mDevice, mVkHandle };
+    }
 
     ShaderRegistry::ShaderRegistry()  = default;
     ShaderRegistry::~ShaderRegistry() = default;
-    void ShaderRegistry::init(RegistryInitializer* init) noexcept { mDevice = static_cast< ShaderRegistryInitializer* >(init)->mDevice; }
+    void ShaderRegistry::init(const RegistryInitializer* const init) noexcept {
+        // TODO: do a runtime type check with dynamic_cast
+        mDefaultDevice = static_cast< const ShaderRegistryInitializer* const >(init)->mDefaultDevice;
+    }
     bool ShaderRegistry::createVkShader(const char* alias) noexcept {
-        if (!hasAttachment(alias)) { return false; }
+        if (!hasAttachment(alias)) {
+            return false;
+        }
         std::lock_guard guard { mMutex };
-        return mRegistry.at(alias)->createVkShader(mDevice);
+        return mRegistry.at(alias)->createVkShader(mDefaultDevice);
     }
     bool ShaderRegistry::destroyVkShader(const char* alias) noexcept {
-        if (!hasAttachment(alias)) { return false; }
+        if (!hasAttachment(alias)) {
+            return false;
+        }
         std::lock_guard guard { mMutex };
         mRegistry.at(alias)->destroyVkShader();
         return true;
-    }
-    ShaderRegistry::attachment_data_type ShaderRegistry::queryAttachment(const char* alias) const {
-        if (!mRegistry.contains(alias)) {
-            NUTS_ENGINE_WARN("An attachment with name {} is not loaded!", alias);
-            return attachment_data_type {};
-        }
-        // GetAttachmentData might throw
-        auto mData = mRegistry.at(alias)->getAttachmentData();
-        return mData;
     }
 
 } // namespace nuts

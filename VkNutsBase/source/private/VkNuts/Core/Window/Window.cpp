@@ -67,9 +67,15 @@ namespace nuts {
     void Window::setVSync(bool vsync) noexcept { mWindowProperties.VSync = vsync; }
 
     bool Window::updateWindowCallbacks(const char* callbackLib, const char* alias) noexcept {
-        if (!mRegistry.hasAttachment(alias)) { mRegistry.attachAttachment(alias, callbackLib); }
+
+        auto attachment = mRegistry.getAttachment(alias);
+        if (!attachment) {
+            mRegistry.attachAttachment(alias, callbackLib);
+            attachment = mRegistry.getAttachment(alias);
+        }
+
         try {
-            auto data = mRegistry.queryAttachment(alias);
+            auto data = attachment->getData();
 
             glfwSetWindowSizeCallback(mWindow, data.windowResizeFunc);
             glfwSetWindowCloseCallback(mWindow, data.windowCloseFunc);
@@ -134,6 +140,7 @@ namespace nuts {
 
         if (!nWindowsInitialized.load()) { glfwTerminate(); }
 
+        mRegistry.finalize();
         return true;
     }
 
