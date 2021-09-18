@@ -14,3 +14,6 @@
 [submodule "extern/stb"]
 	path = extern/stb
 	url = https://github.com/MichaelRizkalla/stb.git
+[submodule "VkNutsBase/source/public/Utilities/ImGui/imgui"]
+	path = VkNutsBase/source/public/Utilities/ImGui/imgui
+	url = https://github.com/MichaelRizkalla/imgui.git

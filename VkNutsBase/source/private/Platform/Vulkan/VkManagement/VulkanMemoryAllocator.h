@@ -20,7 +20,7 @@
 #endif
 
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
-#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_STATIC_VULKAN_FUNCTIONS  0
 #include <vk_mem_alloc.h>
 
 #if defined(NUTS_COMPILER_CLANG)
@@ -31,6 +31,7 @@
 #endif
 
 namespace nuts {
+
     struct Buffer {
         vk::Buffer    buffer { nullptr };
         VmaAllocation allocation { nullptr };
@@ -50,6 +51,13 @@ namespace nuts {
     struct AccelerationStructureKHR {
         vk::AccelerationStructureKHR accelerationStructure { nullptr };
         VmaAllocation                allocation { nullptr };
+    };
+    struct AllocationChunk {
+        uint32_t         memoryType { 0 };
+        vk::DeviceMemory deviceMemory { nullptr };
+        vk::DeviceSize   offset { 0 };
+        vk::DeviceSize   size { 0 };
+        void*            pMappedData { nullptr };
     };
 
     class VulkanMemoryAllocator {
@@ -95,6 +103,13 @@ namespace nuts {
         NUTS_API inline void destroyImage(Image& image) noexcept;
         NUTS_API inline void destroyTexture(Texture& texture) noexcept;
 
+        // Obtain VkDeviceMemory
+        template < class VkAllocatedType >
+        NUTS_API [[nodiscard]] inline AllocationChunk getAllocationMemory(const VkAllocatedType& type) const noexcept;
+
+        NUTS_API [[nodiscard]] inline void* mapAllocation(VmaAllocation allocation) noexcept;
+        NUTS_API [[nodiscard]] inline void  unmapAllocation(VmaAllocation allocation) noexcept;
+
       private:
         [[nodiscard]] inline constexpr static VmaMemoryUsage VkMemFlagsToVmaMemoryUsage(vk::MemoryPropertyFlags flags) noexcept;
 
@@ -102,3 +117,9 @@ namespace nuts {
         VmaAllocator mAllocator { nullptr };
     };
 } // namespace nuts
+
+#if !defined(NUTS_BUILD_DLL)
+extern template nuts::AllocationChunk NUTS_API nuts::VulkanMemoryAllocator::getAllocationMemory< nuts::Buffer >(const Buffer& buffer) const noexcept;
+extern template nuts::AllocationChunk NUTS_API nuts::VulkanMemoryAllocator::getAllocationMemory< nuts::Image >(const Image& buffer) const noexcept;
+extern template nuts::AllocationChunk NUTS_API nuts::VulkanMemoryAllocator::getAllocationMemory< nuts::Texture >(const Texture& buffer) const noexcept;
+#endif // !defined(NUTS_BUILD_DLL)

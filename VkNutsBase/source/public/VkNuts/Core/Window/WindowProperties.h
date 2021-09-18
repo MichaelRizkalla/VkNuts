@@ -8,8 +8,8 @@
 
 namespace nuts {
     struct WindowProperties {
-        std::uint32_t                 Width;
-        std::uint32_t                 Height;
+        int                           Width;
+        int                           Height;
         const char*                   Title;
         bool                          VSync;
         std::function< void(Event&) > EventCallback;

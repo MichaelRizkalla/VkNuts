@@ -18,7 +18,12 @@ namespace nuts {
         }
 
         [[nodiscard]] virtual bool onLoad() noexcept   = 0;
-        virtual bool onUnload() noexcept = 0;
+        virtual bool               onUnload() noexcept = 0;
+
+        template < class TAttachmentType, class Allocator = NutsAllocator< TAttachmentType >, class... Types >
+        static UniqueRef< Attachment > createAttachment(const char* name, Types&&... types) {
+            return allocate_unique< Attachment, TAttachmentType >(Allocator {}, name, types);
+        }
 
       protected:
         const char* mAttachmentName;

@@ -5,6 +5,11 @@
 #include <stdlib.h>
 
 int main() {
-    nuts::Engine app;
-    return app.run();
+
+    auto app = nuts::Engine::getInstance();
+
+    app->run();
+
+    app->close();
+
 }

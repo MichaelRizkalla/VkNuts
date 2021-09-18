@@ -26,11 +26,19 @@ namespace nuts {
 
     struct WindowResizedEvent : public Event {
       public:
-        WindowResizedEvent(int inWidth, int inHeight) : mWidth { inWidth }, mHeight { inHeight } {}
+        WindowResizedEvent(int inWidth, int inHeight) : mWidth { inWidth }, mHeight { inHeight } {
+        }
         ~WindowResizedEvent() = default;
 
-        int getWidth() const { return mWidth; }
-        int getHeight() const { return mHeight; }
+        int getWidth() const noexcept {
+            return mWidth;
+        }
+        int getHeight() const noexcept {
+            return mHeight;
+        }
+        std::pair< int, int > getDimensions() const noexcept {
+            return std::make_pair(mWidth, mHeight);
+        }
 
         EVENT_INTERFACE(WindowResized, EventCategory::Window, WindowResizedEvent, "WindowResizedEvent: new width: " << mWidth << ", new height: " << mHeight << '\n')
 

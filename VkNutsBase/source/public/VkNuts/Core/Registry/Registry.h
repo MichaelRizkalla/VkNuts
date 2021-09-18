@@ -4,6 +4,7 @@
 #include <NutsPCH.h>
 // clang-format on
 
+#include <VkNuts/Core/Log/Log.h>
 #include <VkNuts/Core/Attachment/Attachment.h>
 
 namespace nuts {
@@ -22,6 +23,9 @@ namespace nuts {
         DELETE_MOVE_CLASS(Registry)
         DELETE_COPY_CLASS(Registry)
 
+        struct attach_from_desk {};
+        struct attach_created_attachment {};
+
       public:
         using allocator_type  = Allocator;
         using attachment_type = TAttachmentType;
@@ -31,26 +35,16 @@ namespace nuts {
             detachAllAttachments();
         }
         // TODO: Rename the function maybe?
-        template < class... Types >
-        bool attachAttachment(const char* alias, const char* nameOnDesk, Types&&... _InTypes) noexcept {
+        template < class TAttchment = attachment_type, class... Types >
+        [[nodiscard]] bool createAttachmentFromDesk(const char* alias, const char* nameOnDesk, Types&&... _InTypes) noexcept {
             try {
-                std::lock_guard guard { mMutex };
-                auto            result = std::find_if(mRegistry.begin(), mRegistry.end(), [&](auto& itr) {
-                    if (itr.first == alias)
-                        return true;
-                    if (std::strcmp(itr.second->getAttachmentName(), nameOnDesk) == 0)
-                        return true;
-                    return false;
-                });
-                if (result != mRegistry.end()) {
-                    if (result->first == alias) {
-                        NUTS_ENGINE_WARN("An attachment with similar alias as {} is already loaded!", alias);
-                    } else {
-                        NUTS_ENGINE_WARN("The attachment with another alias as {} is already loaded!", result->first);
-                    }
+                std::scoped_lock guard { mMutex };
+
+                if (isDuplicateAlias< attach_from_desk >(alias, nameOnDesk)) {
                     return false;
                 }
-                auto mAttachment = allocate_unique< attachment_type >(allocator_type {}, nameOnDesk, std::forward< Types&& >(_InTypes)...);
+
+                auto mAttachment = allocate_unique< TAttchment >(allocator_type {}, nameOnDesk, std::forward< Types&& >(_InTypes)...);
                 if (!mAttachment->onLoad()) {
                     return false;
                 }
@@ -63,8 +57,21 @@ namespace nuts {
                 return false;
             }
         }
-        bool detachAttachment(const char* alias) noexcept {
-            std::lock_guard guard { mMutex };
+        [[nodiscard]] void attachAttachment(const char* alias, UniqueRef< attachment_type > attachment) {
+            std::scoped_lock guard { mMutex };
+
+            if (isDuplicateAlias< attach_created_attachment >(alias)) {
+                throw std::exception { "An attachment is loaded with similar alias!" };
+            }
+
+            if (!attachment->onLoad()) {
+                throw std::exception { "An attachment failed when loading!" };
+            }
+
+            mRegistry.insert(std::make_pair(alias, std::move(attachment)));
+        }
+        [[nodiscard]] bool detachAttachment(const char* alias) noexcept {
+            std::scoped_lock guard { mMutex };
             if (!hasAttachment(alias)) {
                 NUTS_ENGINE_WARN("An attachment with name {} is not loaded!", alias);
                 return false;
@@ -74,10 +81,13 @@ namespace nuts {
             return true;
         }
         void detachAllAttachments() noexcept {
-            std::lock_guard guard { mMutex };
+            std::scoped_lock guard { mMutex };
+            for (auto& [key, value] : mRegistry) {
+                value->onUnload();
+            }
             mRegistry.clear();
         }
-        bool hasAttachment(const char* alias) const noexcept {
+        [[nodiscard]] bool hasAttachment(const char* alias) const noexcept {
             try {
                 return mRegistry.contains(alias);
             } catch (std::exception& e) {
@@ -85,7 +95,7 @@ namespace nuts {
                 return false;
             }
         }
-        const attachment_type* const getAttachment(const char* alias) const noexcept {
+        [[nodiscard]] const attachment_type* const getAttachment(const char* alias) const noexcept {
             try {
                 return mRegistry.at(alias).get();
             } catch (std::out_of_range& e) {
@@ -95,11 +105,38 @@ namespace nuts {
         }
 
         // Better to return a const ref, to avoid copies ??
-        const HashMap< const char*, UniqueRef< attachment_type > >& getAttachments() const noexcept {
+        [[nodiscard]] const HashMap< String, UniqueRef< attachment_type > >& getAttachments() const noexcept {
             return mRegistry;
         }
 
       protected:
+        template < class T >
+        inline bool isDuplicateAlias(const char* alias, const char* nameOnDesk = "None") noexcept {
+            typename decltype(mRegistry)::iterator result {};
+            if constexpr (std::same_as< T, attach_from_desk >) {
+                result = std::find_if(mRegistry.begin(), mRegistry.end(), [&](auto& itr) {
+                    if (itr.first == alias)
+                        return true;
+                    if (std::strcmp(itr.second->getAttachmentName(), nameOnDesk) == 0)
+                        return true;
+                    return false;
+                });
+            } else if constexpr (std::same_as< T, attach_created_attachment >) {
+                result = std::find_if(mRegistry.begin(), mRegistry.end(), [&](auto& itr) {
+                    if (itr.first == alias)
+                        return true;
+                    return false;
+                });
+            }
+
+            if (result != mRegistry.end()) {
+                if (result->first == alias) {
+                    NUTS_ENGINE_WARN("An attachment with similar alias as {} is already loaded!", alias);
+                }
+                return true;
+            }
+            return false;
+        }
         // Alias -- Attachment
         HashMap< String, UniqueRef< attachment_type > > mRegistry;
         std::mutex                                      mMutex;

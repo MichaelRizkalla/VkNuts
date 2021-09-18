@@ -55,7 +55,8 @@ namespace nuts {
         vulkanFunctions.vkUnmapMemory                           = VULKAN_HPP_DEFAULT_DISPATCHER.vkUnmapMemory;
 
         VmaAllocatorCreateInfo allocatorCreateInfo {};
-        allocatorCreateInfo.flags                       = VMA_ALLOCATOR_CREATE_FLAG_BITS_MAX_ENUM;
+        // TODO: flags must be an input
+        allocatorCreateInfo.flags                       = 0;  // VMA_ALLOCATOR_CREATE_FLAG_BITS_MAX_ENUM;
         allocatorCreateInfo.physicalDevice              = physicalDevice;
         allocatorCreateInfo.device                      = device;
         allocatorCreateInfo.preferredLargeHeapBlockSize = 0;
@@ -68,21 +69,26 @@ namespace nuts {
         allocatorCreateInfo.instance                    = instance;
         allocatorCreateInfo.vulkanApiVersion            = 0;
 
-        if (static_cast< VkResult >(vk::Result::eSuccess) != vmaCreateAllocator(&allocatorCreateInfo, &mAllocator)) { return false; }
+        if (static_cast< VkResult >(vk::Result::eSuccess) != vmaCreateAllocator(&allocatorCreateInfo, &mAllocator)) {
+            return false;
+        }
         return true;
     }
-    void VulkanMemoryAllocator::finalize() noexcept { vmaDestroyAllocator(mAllocator); }
+    void VulkanMemoryAllocator::finalize() noexcept {
+        vmaDestroyAllocator(mAllocator);
+    }
 
     Buffer VulkanMemoryAllocator::createBuffer(const vk::BufferCreateInfo& bufferCreateInfo, const vk::MemoryPropertyFlags memoryPropertyFlags) noexcept {
         VmaAllocationCreateInfo allocationCreateInfo = {};
         allocationCreateInfo.usage                   = VulkanMemoryAllocator::VkMemFlagsToVmaMemoryUsage(memoryPropertyFlags);
 
         Buffer   buffer;
-        VkBuffer buf = buffer.buffer;
+        VkBuffer buf = VK_NULL_HANDLE;
         if (VK_SUCCESS !=
             vmaCreateBuffer(mAllocator, reinterpret_cast< const VkBufferCreateInfo* >(&bufferCreateInfo), &allocationCreateInfo, &buf, &buffer.allocation, nullptr)) {
             return {};
         }
+        buffer.buffer = buf;
         return buffer;
     }
     Buffer VulkanMemoryAllocator::createBuffer(const vk::DeviceSize bufferSize, const vk::BufferUsageFlags bufferUsage,
@@ -117,14 +123,18 @@ namespace nuts {
 
     bool VulkanMemoryAllocator::copyDataToBuffer(Buffer buffer, vk::DeviceSize bufferSize, const void* data) const noexcept {
         void* mappedData = nullptr;
-        if (VK_SUCCESS != vmaMapMemory(mAllocator, buffer.allocation, &mappedData)) { return false; }
+        if (VK_SUCCESS != vmaMapMemory(mAllocator, buffer.allocation, &mappedData)) {
+            return false;
+        }
         std::memcpy(mappedData, data, bufferSize);
         vmaUnmapMemory(mAllocator, buffer.allocation);
         return true;
     }
     bool VulkanMemoryAllocator::copyDataFromBuffer(const Buffer& buffer, vk::DeviceSize dataSize, void* data) const noexcept {
         void* mappedData = nullptr;
-        if (VK_SUCCESS != vmaMapMemory(mAllocator, buffer.allocation, &mappedData)) { return false; }
+        if (VK_SUCCESS != vmaMapMemory(mAllocator, buffer.allocation, &mappedData)) {
+            return false;
+        }
         std::memcpy(data, mappedData, dataSize);
         vmaUnmapMemory(mAllocator, buffer.allocation);
         return true;
@@ -135,18 +145,21 @@ namespace nuts {
         allocationCreateInfo.usage                   = VulkanMemoryAllocator::VkMemFlagsToVmaMemoryUsage(memoryPropertyFlags);
 
         Image   image;
-        VkImage img = image.image;
+        VkImage img = VK_NULL_HANDLE;
         if (VK_SUCCESS !=
             vmaCreateImage(mAllocator, reinterpret_cast< const VkImageCreateInfo* >(&imageCreateInfo), &allocationCreateInfo, &img, &image.allocation, nullptr)) {
             return {};
         }
+        image.image       = img;
         image.imageLayout = imageCreateInfo.initialLayout;
         return image;
     }
     Image VulkanMemoryAllocator::createImage(vk::CommandBuffer commandBuffer, const vk::ImageCreateInfo& imageCreateInfo,
                                              const vk::MemoryPropertyFlags memoryPropertyFlags, vk::ImageLayout imageLayout) noexcept {
         auto image = createImage(imageCreateInfo, memoryPropertyFlags);
-        if (!image.image) { return image; }
+        if (!image.image) {
+            return image;
+        }
         VulkanImage::changeImageLayout(commandBuffer, image.image, image.imageLayout, imageLayout);
         image.imageLayout = imageLayout;
         return image;
@@ -155,7 +168,9 @@ namespace nuts {
     Texture VulkanMemoryAllocator::createTexture(const vk::ImageCreateInfo& imageCreateInfo, const vk::MemoryPropertyFlags memoryPropertyFlags,
                                                  const vk::ImageViewCreateInfo& imageViewCreateInfo) noexcept {
         auto image = createImage(imageCreateInfo, memoryPropertyFlags);
-        if (!image.image) { return {}; }
+        if (!image.image) {
+            return {};
+        }
 
         return createTexture(image, imageViewCreateInfo);
     }
@@ -166,7 +181,10 @@ namespace nuts {
         texture.allocation  = image.allocation;
         texture.imageLayout = vk::ImageLayout::eUndefined;
 
-        if (vk::Result::eSuccess != mDevice.createImageView(&imageViewCreateInfo, nullptr, &texture.imageView)) { return {}; }
+        if (vk::Result::eSuccess != mDevice.createImageView(&imageViewCreateInfo, nullptr, &texture.imageView)) {
+            // TODO: Bug might be caused by creating Image and failing to create ImageView
+            return {};
+        }
 
         return texture;
     }
@@ -174,28 +192,76 @@ namespace nuts {
                                                  const vk::MemoryPropertyFlags memoryPropertyFlags, vk::ImageLayout imageLayout,
                                                  const vk::ImageViewCreateInfo& imageViewCreateInfo) noexcept {
         auto image = createImage(commandBuffer, imageCreateInfo, memoryPropertyFlags, imageLayout);
-        if (!image.image) { return {}; }
+        if (!image.image) {
+            return {};
+        }
 
         return createTexture(image, imageViewCreateInfo);
     }
 
     void VulkanMemoryAllocator::destroyBuffer(Buffer& buffer) noexcept {
-        if (buffer.buffer) { vmaDestroyBuffer(mAllocator, buffer.buffer, buffer.allocation); }
+        if (buffer.buffer) {
+            vmaDestroyBuffer(mAllocator, buffer.buffer, buffer.allocation);
+        }
         buffer.buffer     = nullptr;
         buffer.allocation = nullptr;
     }
     void VulkanMemoryAllocator::destroyImage(Image& image) noexcept {
-        if (image.image) { vmaDestroyImage(mAllocator, image.image, image.allocation); }
+        if (image.image) {
+            vmaDestroyImage(mAllocator, image.image, image.allocation);
+        }
         image.image       = nullptr;
         image.allocation  = nullptr;
         image.imageLayout = vk::ImageLayout::eUndefined;
     }
-    void VulkanMemoryAllocator::destroyTexture(Texture& texture) noexcept {
-        if (texture.imageView) { mDevice.destroyImageView(texture.imageView); }
+    void VulkanMemoryAllocator:: destroyTexture(Texture& texture) noexcept {
+        if (texture.imageView) {
+            mDevice.destroyImageView(texture.imageView);
+        }
         texture.imageView = nullptr;
-        if (texture.image) { vmaDestroyImage(mAllocator, texture.image, texture.allocation); }
+        if (texture.image) {
+            vmaDestroyImage(mAllocator, texture.image, texture.allocation);
+        }
         texture.image       = nullptr;
         texture.allocation  = nullptr;
         texture.imageLayout = vk::ImageLayout::eUndefined;
     }
+
+    template < class VkAllocatedType >
+    AllocationChunk VulkanMemoryAllocator::getAllocationMemory(const VkAllocatedType& type) const noexcept {
+        if (!type.allocation) {
+            return {};
+        }
+        AllocationChunk   alloc {};
+        VmaAllocationInfo allocInfo {};
+
+        vmaGetAllocationInfo(mAllocator, type.allocation, &allocInfo);
+
+        alloc.memoryType   = allocInfo.memoryType;
+        alloc.deviceMemory = allocInfo.deviceMemory;
+        alloc.offset       = allocInfo.offset;
+        alloc.size         = allocInfo.size;
+        alloc.pMappedData  = allocInfo.pMappedData;
+
+        return alloc;
+    }
+
+    inline void* VulkanMemoryAllocator::mapAllocation(VmaAllocation allocation) noexcept {
+        void* data { nullptr };
+        if (auto res = static_cast< vk::Result >(vmaMapMemory(mAllocator, allocation, &data)); vk::Result::eSuccess != res) {
+            NUTS_ENGINE_ERROR("Failed to map Vulkan allocation: {} with error code: {}", static_cast< void* >(allocation), res);
+        }
+        return data;
+    }
+
+    inline void VulkanMemoryAllocator::unmapAllocation(VmaAllocation allocation) noexcept {
+        vmaUnmapMemory(mAllocator, allocation);
+    }
+
 } // namespace nuts
+
+#if defined(NUTS_BUILD_DLL)
+template nuts::AllocationChunk NUTS_API nuts::VulkanMemoryAllocator::getAllocationMemory< nuts::Buffer >(const Buffer& buffer) const noexcept;
+template nuts::AllocationChunk NUTS_API nuts::VulkanMemoryAllocator::getAllocationMemory< nuts::Image >(const Image& buffer) const noexcept;
+template nuts::AllocationChunk NUTS_API nuts::VulkanMemoryAllocator::getAllocationMemory< nuts::Texture >(const Texture& buffer) const noexcept;
+#endif // defined(NUTS_BUILD_DLL)

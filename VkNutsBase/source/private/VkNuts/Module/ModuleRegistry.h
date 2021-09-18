@@ -3,7 +3,7 @@
 // clang-format off
 #include <NutsPCH.h>
 // clang-format on
-
+/*
 #include <Utilities/SingletonCRTP.hpp>
 #include <VkNuts/Core/Registry/Registry.h>
 #include <VkNuts/Module/Module.h>
@@ -15,3 +15,4 @@ namespace nuts {
         ~ModuleRegistry();
     };
 } // namespace nuts
+*/

@@ -16,8 +16,8 @@ namespace nuts {
       private:
         std::pmr::memory_resource* mUpStream;
 
-        void* do_allocate(std::size_t bytes, std::size_t alignment) override;
+        [[nodiscard]] void* do_allocate(std::size_t bytes, std::size_t alignment) override;
         void  do_deallocate(void* ptr, std::size_t bytes, std::size_t alignment) override;
-        bool  do_is_equal(const memory_resource& rhs) const noexcept override;
+        [[nodiscard]] bool do_is_equal(const memory_resource& rhs) const noexcept override;
     };
 } // namespace nuts

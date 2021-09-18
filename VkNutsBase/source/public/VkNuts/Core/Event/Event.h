@@ -7,19 +7,25 @@
 #include <VkNuts/Core/Event/EventType.hpp>
 #include <VkNuts/Core/Event/EventCategory.hpp>
 
-#define EVENT_TYPE_INTERFACE(eventType)                                             \
-    static EventType getStaticEventType() noexcept { return EventType::eventType; } \
-    EventType        getEventType() const noexcept override { return EventType::eventType; }
+#define EVENT_TYPE_INTERFACE(eventType)                \
+    static EventType getStaticEventType() noexcept {   \
+        return EventType::eventType;                   \
+    }                                                  \
+    EventType getEventType() const noexcept override { \
+        return EventType::eventType;                   \
+    }
 
-#define EVENT_CATEGORY_INTERFACE(eventCategories)                                                                                                                        \
-    static std::underlying_type_t< EventCategory > getStaticEventCategory() noexcept { return static_cast< std::underlying_type_t< EventCategory > >(eventCategories); } \
-    std::underlying_type_t< EventCategory >        getEventCategories() const noexcept override {                                                                        \
-        return static_cast< std::underlying_type_t< EventCategory > >(eventCategories);                                                                           \
+#define EVENT_CATEGORY_INTERFACE(eventCategories)                                          \
+    static std::underlying_type_t< EventCategory > getStaticEventCategory() noexcept {     \
+        return static_cast< std::underlying_type_t< EventCategory > >(eventCategories);    \
+    }                                                                                      \
+    std::underlying_type_t< EventCategory > getEventCategories() const noexcept override { \
+        return static_cast< std::underlying_type_t< EventCategory > >(eventCategories);    \
     }
 
 #define EVENT_NAME_INTERFACE(name) NUTS_LOG(const char* getName() const noexcept override { return #name; })
 
-#define EVENT_TO_STRING_INTERFACE(text)                                       \
+#define EVENT_TO_STRING_INTERFACE(text)                                      \
     NUTS_LOG(std::string getStringRepresentation() const noexcept override { \
         std::stringstream ss;                                                \
         ss << text;                                                          \
@@ -32,7 +38,8 @@
 namespace nuts {
     struct Event {
       public:
-        Event() : mIsHandled(false) {}
+        Event() : mIsHandled(false) {
+        }
         DELETE_COPY_CLASS(Event)
         DELETE_MOVE_CLASS(Event)
         virtual ~Event() = default;
@@ -44,17 +51,30 @@ namespace nuts {
         virtual std::string getStringRepresentation() const noexcept = 0;
 #endif
 
-        bool isInCategory(EventCategory category) { return static_cast< bool >(getEventCategories() & static_cast< std::underlying_type_t< EventCategory > >(category)); }
+        bool isInCategory(EventCategory category) {
+            return static_cast< bool >(getEventCategories() & static_cast< std::underlying_type_t< EventCategory > >(category));
+        }
+        void markAsHandled() noexcept {
+            mIsHandled = true;
+        }
+        bool isHandled() const noexcept {
+            return mIsHandled;
+        }
 
       private:
         bool mIsHandled;
     };
 
     struct EventHandler {
+        EventHandler(Event& e) : mEvent(e) {
+        }
+
         template < typename TEventClass, typename Func >
         requires(std::is_base_of_v< Event, TEventClass >, std::is_invocable_v< Func, TEventClass& >) bool handle(Func&& func) {
             if (TEventClass::getStaticEventType() == mEvent.getEventType()) {
-                mEvent.mIsHandled = func(static_cast< TEventClass& >(mEvent));
+                if (func(static_cast< TEventClass& >(mEvent))) {
+                    mEvent.markAsHandled();
+                }
                 return true;
             }
             return false;

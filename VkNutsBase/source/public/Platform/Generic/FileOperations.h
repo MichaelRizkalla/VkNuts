@@ -4,7 +4,7 @@
 #include <NutsPCH.h>
 // clang-format on
 
-#include <stb_image.h>
+#include <Utilities/STBImage/STBImage.h>
 #include <Platform/Generic/ImageLoadFormat.h>
 
 namespace nuts {

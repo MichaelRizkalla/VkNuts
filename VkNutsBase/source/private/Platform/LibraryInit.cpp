@@ -10,7 +10,7 @@ namespace nuts {
         std::pmr::memory_resource* mDefaultMemoryResource;
 
         LibraryInit() : mDefaultMemoryResource(std::pmr::get_default_resource()) { 
-            std::pmr::set_default_resource(get_nuts_memory_resource()); 
+            std::pmr::set_default_resource(get_nuts_memory_resource());
         }
         ~LibraryInit() { std::pmr::set_default_resource(mDefaultMemoryResource); }
     };

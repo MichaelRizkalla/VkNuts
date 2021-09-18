@@ -10,6 +10,10 @@ namespace nuts {
 
     template < class Type >
     class Singleton {
+      public:
+        using class_type = Type;
+        using pointer    = Type*;
+
       private:
         inline static std::once_flag    mOnceFlag {};
         inline static UniqueRef< Type > mInstance { nullptr };
@@ -21,13 +25,10 @@ namespace nuts {
         DELETE_MOVE_CLASS(Singleton)
 
       public:
-        using class_type = Type;
-        using pointer    = Type*;
-
         static pointer getInstance() noexcept {
             std::call_once(mOnceFlag, [&]() {
                 struct TypeMaker : public class_type {};
-                std::pmr::polymorphic_allocator< TypeMaker > alloc {};
+                NutsAllocator< TypeMaker > alloc {};
 
                 mInstance = std::move(allocate_unique< class_type, TypeMaker >(alloc));
             });

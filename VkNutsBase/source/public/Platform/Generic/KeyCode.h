@@ -5,6 +5,7 @@
 // clang-format on
 
 #include <GLFW/glfw3.h>
+#include <Utilities/ConstexprMap.hpp>
 #include <Utilities/Utilities.hpp>
 
 namespace nuts {

@@ -12,20 +12,19 @@ namespace nuts {
     ///
     /// </summary>
     /// <typeparam name="VulkanType"></typeparam>
-    template < class VulkanType >
+    template < class VulkanType, class UnderlyingContainer = VulkanType >
     struct VulkanAttachment : public Attachment {
 
-        using vulkan_type = VulkanType;
+        using vulkan_type          = VulkanType;
+        using underlying_container = UnderlyingContainer;
 
         [[nodiscard]] explicit VulkanAttachment(const char* name) : Attachment { name }, mVkHandle {} {
         }
 
-        [[nodiscard]] vulkan_type getVkHandle() const noexcept {
-            return mVkHandle;
-        }
+        [[nodiscard]] virtual vulkan_type getVkHandle() const noexcept = 0;
 
       protected:
-        vulkan_type mVkHandle;
+        underlying_container mVkHandle;
     };
 
 } // namespace nuts

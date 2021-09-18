@@ -7,6 +7,7 @@
 #include <VkNuts/Core/Window/Window.h>
 #include <VkNuts/Core/Event/WindowEvents.h>
 #include <VkNuts/Core/Event/IOEvents.h>
+#include <VkNuts/Core/Window/WindowCallbacks.h>
 
 #if defined(NUTS_OS_WINDOWS)
     #define GLFW_EXPOSE_NATIVE_WIN32
@@ -17,15 +18,15 @@
 
 namespace nuts {
 
-    std::atomic_bool       Window::isGLFWInitialized   = false;
-    std::atomic_uint32_t   Window::nWindowsInitialized = 0;
-    std::mutex             Window::mMutex;
-    WindowCallbackRegistry Window::mRegistry = WindowCallbackRegistry {};
+    std::atomic_bool     Window::isGLFWInitialized   = false;
+    std::atomic_uint32_t Window::nWindowsInitialized = 0;
+    std::mutex           Window::mMutex;
 
-    Window::Window() : mWindow(nullptr) {}
+    Window::Window() : mWindow(nullptr) {
+    }
 
-    Window::~Window() { 
-        finalize(); 
+    Window::~Window() {
+        finalize();
     };
 
     UniqueRef< Window > Window::create() {
@@ -34,14 +35,18 @@ namespace nuts {
             ~WindowMaker() = default;
         };
 
-        std::pmr::polymorphic_allocator< std::byte > alloc {};
+        NutsAllocator< WindowMaker > alloc {};
 
         return allocate_unique< Window, WindowMaker >(alloc);
     }
 
-    const GLFWwindow* Window::getHandle() const noexcept { return reinterpret_cast< const GLFWwindow* >(mWindow); }
+    const GLFWwindow* Window::getHandle() const noexcept {
+        return reinterpret_cast< const GLFWwindow* >(mWindow);
+    }
 
-    GLFWwindow* Window::getHandle() noexcept { return mWindow; }
+    GLFWwindow* Window::getHandle() noexcept {
+        return mWindow;
+    }
 
     const Window::NativeHandle Window::getNativeHandle() const noexcept {
 #if defined(NUTS_OS_WINDOWS)
@@ -51,61 +56,69 @@ namespace nuts {
 #endif
     }
 
-    Window::NativeHandle Window::getNativeHandle() noexcept { return const_cast< NativeHandle >(reinterpret_cast< const Window* >(this)->getNativeHandle()); }
+    Window::NativeHandle Window::getNativeHandle() noexcept {
+        return const_cast< NativeHandle >(reinterpret_cast< const Window* >(this)->getNativeHandle());
+    }
 
     // Get and set window props
-    std::uint32_t Window::getWidth() const noexcept { return mWindowProperties.Width; }
+    std::uint32_t Window::getWidth() const noexcept {
+        nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(mWindow));
+        return static_cast< std::uint32_t >(data.Width);
+    }
 
-    std::uint32_t Window::getHeight() const noexcept { return mWindowProperties.Height; }
+    std::uint32_t Window::getHeight() const noexcept {
+        nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(mWindow));
+        return static_cast< std::uint32_t >(data.Height);
+    }
 
-    const char* Window::getTitle() const noexcept { return mWindowProperties.Title; }
+    std::pair< std::uint32_t, std::uint32_t > Window::getDimensions() const noexcept {
+        nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(mWindow));
+        return std::make_pair(static_cast< std::uint32_t >(data.Width), static_cast< std::uint32_t >(data.Height));
+    }
 
-    bool Window::hasVSync() const noexcept { return mWindowProperties.VSync; }
+    const char* Window::getTitle() const noexcept {
+        nuts::WindowProperties& data = *reinterpret_cast< nuts::WindowProperties* >(glfwGetWindowUserPointer(mWindow));
+        return data.Title;
+    }
 
-    void Window::setEventCallback(EventCallbackSignature&& callback) noexcept { mWindowProperties.EventCallback = callback; }
+    bool Window::hasVSync() const noexcept {
+        return mWindowProperties.VSync;
+    }
 
-    void Window::setVSync(bool vsync) noexcept { mWindowProperties.VSync = vsync; }
+    void Window::setEventCallback(EventCallbackSignature&& callback) noexcept {
+        mWindowProperties.EventCallback = callback;
+    }
 
-    bool Window::updateWindowCallbacks(const char* callbackLib, const char* alias) noexcept {
+    void Window::setVSync(bool vsync) noexcept {
+        if (vsync)
+            glfwSwapInterval(1);
+        else
+            glfwSwapInterval(0);
 
-        auto attachment = mRegistry.getAttachment(alias);
-        if (!attachment) {
-            mRegistry.attachAttachment(alias, callbackLib);
-            attachment = mRegistry.getAttachment(alias);
-        }
+        mWindowProperties.VSync = vsync;
+    }
 
-        try {
-            auto data = attachment->getData();
+    bool Window::updateWindowCallbacks() noexcept {
 
-            glfwSetWindowSizeCallback(mWindow, data.windowResizeFunc);
-            glfwSetWindowCloseCallback(mWindow, data.windowCloseFunc);
-            glfwSetKeyCallback(mWindow, data.keyIOFunc);
-            glfwSetCharCallback(mWindow, data.charIOFunc);
-            glfwSetMouseButtonCallback(mWindow, data.mouseButtonFunc);
-            glfwSetScrollCallback(mWindow, data.mouseScrollFunc);
-            glfwSetCursorPosCallback(mWindow, data.cursorPositionFunc);
+        auto data = WindowCallbacks::getData();
 
-            return true;
-        } catch (...) { return false; }
+        glfwSetWindowSizeCallback(mWindow, data.windowResizeFunc);
+        glfwSetWindowCloseCallback(mWindow, data.windowCloseFunc);
+        glfwSetKeyCallback(mWindow, data.keyIOFunc);
+        glfwSetCharCallback(mWindow, data.charIOFunc);
+        glfwSetMouseButtonCallback(mWindow, data.mouseButtonFunc);
+        glfwSetScrollCallback(mWindow, data.mouseScrollFunc);
+        glfwSetCursorPosCallback(mWindow, data.cursorPositionFunc);
+
+        return true;
+    }
+
+    void Window::onUpdate() {
+        glfwPollEvents();
     }
 
     bool Window::init(const WindowProperties& windowProperties) noexcept {
-
-        return init(windowProperties,
-#if defined(NUTS_OS_WINDOWS)
-                    "vknuts-windowcallback.dll"
-#elif defined(NUTS_OS_LINUX)
-                    "vknuts-windowcallback.so"
-#else
-    #error "OS is not yet supported!"
-#endif
-                    ,
-                    "vknuts-windowcallback");
-    }
-
-    bool Window::init(const WindowProperties& windowProperties, const char* callbackLib, const char* alias) noexcept {
         mWindowProperties = windowProperties;
-        mRegistry.init(nullptr);
 
         mMutex.lock();
         if (!isGLFWInitialized.load()) {
@@ -130,22 +143,17 @@ namespace nuts {
         glfwSetWindowUserPointer(mWindow, &mWindowProperties);
 
         // Set callbacks
-        return updateWindowCallbacks(callbackLib, alias);
+        return updateWindowCallbacks();
     }
 
-    bool Window::finalize() noexcept {
+    void Window::finalize() noexcept {
         glfwDestroyWindow(mWindow);
 
         nWindowsInitialized--;
 
-        if (!nWindowsInitialized.load()) { glfwTerminate(); }
-
-        mRegistry.finalize();
-        return true;
+        if (!nWindowsInitialized.load()) {
+            glfwTerminate();
+        }
     }
-
-    bool Window::loadAttachment(const char* callbackLib, const char* alias) noexcept { return mRegistry.attachAttachment(alias, callbackLib); }
-
-    bool Window::unloadAttachment(const char* alias) noexcept { return mRegistry.detachAttachment(alias); }
 
 } // namespace nuts

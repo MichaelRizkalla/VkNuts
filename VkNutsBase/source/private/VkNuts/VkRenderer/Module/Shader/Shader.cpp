@@ -2,7 +2,8 @@
 #include <NutsPCH.h>
 // clang-format on
 
-#include <VkNuts/VkRenderer/Shader.h>
+#include <VkNuts/VkRenderer/Module/Shader/Shader.h>
+#include <Platform/Generic/FileOperations.h>
 
 namespace nuts {
 
@@ -12,7 +13,6 @@ namespace nuts {
             onUnload();
         }
     }
-
     bool ShaderAttachment::onLoad() noexcept {
         try {
             mShader = std::move(File::read< Container< uint32_t > >(getAttachmentName(), std::ios::binary));
@@ -44,29 +44,10 @@ namespace nuts {
             mDevice.destroyShaderModule(mVkHandle);
     }
     ShaderAttachment::attachment_data ShaderAttachment::getData() const noexcept {
-        return attachment_data { mShader.data(), mShader.sizeInBytes(), mDevice, mVkHandle };
+        return attachment_data { shaderStageFlagBit, mShader.data(), mShader.sizeInBytes(), mDevice, mVkHandle };
     }
-
-    ShaderRegistry::ShaderRegistry()  = default;
-    ShaderRegistry::~ShaderRegistry() = default;
-    void ShaderRegistry::init(const RegistryInitializer* const init) noexcept {
-        // TODO: do a runtime type check with dynamic_cast
-        mDefaultDevice = static_cast< const ShaderRegistryInitializer* const >(init)->mDefaultDevice;
-    }
-    bool ShaderRegistry::createVkShader(const char* alias) noexcept {
-        if (!hasAttachment(alias)) {
-            return false;
-        }
-        std::lock_guard guard { mMutex };
-        return mRegistry.at(alias)->createVkShader(mDefaultDevice);
-    }
-    bool ShaderRegistry::destroyVkShader(const char* alias) noexcept {
-        if (!hasAttachment(alias)) {
-            return false;
-        }
-        std::lock_guard guard { mMutex };
-        mRegistry.at(alias)->destroyVkShader();
-        return true;
+    ShaderAttachment::vulkan_type ShaderAttachment::getVkHandle() const noexcept {
+        return mVkHandle;
     }
 
 } // namespace nuts
