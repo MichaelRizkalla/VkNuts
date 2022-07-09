@@ -49,7 +49,7 @@ namespace nuts {
             attachmentReference.layout     = vk::ImageLayout::eColorAttachmentOptimal;
 
             attachmentDescriptions.emplace_back(attachmentDescription);
-            attachmentReferences.emplace_back(attachmentReferences);
+            attachmentReferences.emplace_back(attachmentReference);
         }
 
         vk::AttachmentReference depthAttachmentReference {};

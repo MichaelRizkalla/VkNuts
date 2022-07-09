@@ -4,8 +4,8 @@
 #include <NutsPCH.h>
 // clang-format on
 
-#include <VkNuts/Core/Log/Log.h>
 #include <VkNuts/Core/Attachment/Attachment.h>
+#include <VkNuts/Core/Log/Log.h>
 
 namespace nuts {
     struct RegistryInitializer {};
@@ -44,7 +44,7 @@ namespace nuts {
                     return false;
                 }
 
-                auto mAttachment = allocate_unique< TAttchment >(allocator_type {}, nameOnDesk, std::forward< Types&& >(_InTypes)...);
+                auto mAttachment = UniqueRef< TAttchment >(new TAttchment(nameOnDesk, std::forward< Types&& >(_InTypes)...));
                 if (!mAttachment->onLoad()) {
                     return false;
                 }

@@ -30,7 +30,7 @@ namespace nuts {
                 struct TypeMaker : public class_type {};
                 NutsAllocator< TypeMaker > alloc {};
 
-                mInstance = std::move(allocate_unique< class_type, TypeMaker >(alloc));
+                mInstance = std::move(UniqueRef< class_type >(new TypeMaker));
             });
 
             return mInstance.get();

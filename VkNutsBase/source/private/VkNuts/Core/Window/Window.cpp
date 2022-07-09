@@ -35,9 +35,7 @@ namespace nuts {
             ~WindowMaker() = default;
         };
 
-        NutsAllocator< WindowMaker > alloc {};
-
-        return allocate_unique< Window, WindowMaker >(alloc);
+        return UniqueRef< Window >(new WindowMaker);
     }
 
     const GLFWwindow* Window::getHandle() const noexcept {

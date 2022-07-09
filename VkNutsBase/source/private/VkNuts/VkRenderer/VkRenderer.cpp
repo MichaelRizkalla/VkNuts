@@ -313,9 +313,7 @@ namespace nuts {
         return mTextureRegistry;
     }
     inline VulkanMemoryAllocator& VkRenderer::allocator() noexcept {
-        static VulkanMemoryAllocator mAllocator {};
-
-        return mAllocator;
+        return *VulkanMemoryAllocator::getInstance();
     }
     inline VkSamplerManager& VkRenderer::samplerManager() noexcept {
         static VkSamplerManager mSamplerManager {};

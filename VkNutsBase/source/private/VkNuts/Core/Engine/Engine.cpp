@@ -3,22 +3,22 @@
 #include <NutsPCH.h>
 // clang-format on
 
-#include <VkNuts/Core/Log/Log.h>
 #include <Platform/Vulkan/VulkanHelper.h>
+#include <VkNuts/Core/Log/Log.h>
 #include <VkNuts/Core/Window/Window.h>
 
 #include <VkNuts/Core/Event/Event.h>
 #include <VkNuts/Core/Event/WindowEvents.h>
 
-#include <VkNuts/VkRenderer/VkRenderer.h>
-#include <Utilities/ImGui/ImGuiHelper.h>
-#include <Platform/Vulkan/VkManagement/SwapChain.h>
+#include <Platform/Vulkan/VkManagement/CommandBuffer.h>
 #include <Platform/Vulkan/VkManagement/FrameBuffer.h>
 #include <Platform/Vulkan/VkManagement/RenderPass.h>
-#include <Platform/Vulkan/VkManagement/CommandBuffer.h>
+#include <Platform/Vulkan/VkManagement/SwapChain.h>
+#include <Utilities/ImGui/ImGuiHelper.h>
+#include <VkNuts/VkRenderer/VkRenderer.h>
 
-#include <VkNuts/Core/Engine/Engine.h>
 #include <Platform/Vulkan/VkManagement/VulkanMemoryAllocator.h>
+#include <VkNuts/Core/Engine/Engine.h>
 
 #include <VkNuts/Core/Gui/EditingLayer.h>
 #include <glm/glm.hpp>
@@ -65,7 +65,7 @@ namespace nuts {
 
     Engine* Engine::getInstance() {
         struct EngineMaker : Engine {};
-        static UniqueRef< Engine > mEngine = allocate_unique< Engine, EngineMaker >(NutsAllocator< EngineMaker > {});
+        static UniqueRef< Engine > mEngine = UniqueRef< Engine >(new EngineMaker);
 
         return mEngine.get();
     }
@@ -87,7 +87,7 @@ namespace nuts {
         ImGuiHelper::createContext();
 
         auto editorLayer =
-            allocate_unique< Layer, EditingLayer >(NutsAllocator< EditingLayer > {}, "EditingLayer", device, mWindow.get(), VkRenderer::getSwapChainImageFormat());
+            UniqueRef< Layer >(new EditingLayer("EditingLayer", device, mWindow.get(), VkRenderer::getSwapChainImageFormat()));
         mLayers.attachAttachment("EditingLayer", std::move(editorLayer));
         auto renderPass = mLayers.getAttachment("EditingLayer")->getRenderPass()->getVkHandle();
 

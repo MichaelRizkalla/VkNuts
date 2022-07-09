@@ -19,7 +19,7 @@ namespace nuts {
             result = ImGui_ImplGlfw_InitForVulkan(mWindow->getHandle(), false);
 
             try {
-                mRenderPass = allocate_unique< RenderPass >(NutsAllocator< RenderPass > {});
+                mRenderPass = std::make_unique< RenderPass >();
                 mRenderPass->init(mDevice);
 
                 vk::AttachmentDescription swapChainAttachmentDescription = createAttachmentDescription(mImageFormat);

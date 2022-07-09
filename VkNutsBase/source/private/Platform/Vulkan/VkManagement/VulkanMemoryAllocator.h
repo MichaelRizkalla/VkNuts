@@ -4,6 +4,8 @@
 #include <NutsPCH.h>
 // clang-format on
 
+#include <Utilities/SingletonCRTP.hpp>
+
 #if defined(NUTS_COMPILER_MSVC)
     #pragma warning(push, 4)
     #pragma warning(disable : 4127) // conditional expression is constant
@@ -60,11 +62,15 @@ namespace nuts {
         void*            pMappedData { nullptr };
     };
 
-    class VulkanMemoryAllocator {
+    class VulkanMemoryAllocator : public Singleton< VulkanMemoryAllocator > {
       public:
         using allocate_memory_callback = PFN_vmaAllocateDeviceMemoryFunction;
         using free_memory_callback     = PFN_vmaFreeDeviceMemoryFunction;
+
+      protected:
         VulkanMemoryAllocator();
+
+      public:
         ~VulkanMemoryAllocator();
         DELETE_COPY_CLASS(VulkanMemoryAllocator)
         DELETE_MOVE_CLASS(VulkanMemoryAllocator)
